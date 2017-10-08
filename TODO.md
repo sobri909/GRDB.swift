@@ -18,6 +18,35 @@ GRDB 3.0
 
 - [ ] Rename Request to DatabaseRequest, SQLiteRequest, SQLRequest, because Request is a bad name: https://github.com/swift-server/http/pull/7#issuecomment-308448528
 
+Associations
+
+- [ ] has_many :through
+- [ ] has_one :through
+- [ ] has_and_belongs_to_many
+- [ ] Recursive associations (A -> A, and A -> B, B -> A)
+- [ ] .order(annotation.count) -> this one will probably need SQL ordering
+- [ ] FTS4/5 External Content Full-Text Tables
+- [ ] Author.deleteAll(Author.books)
+- [ ] Refactor requests so that:
+    - [ ] `including` always means that values are co-fetched, regardless of the association:
+    
+        - Country.all().including(Country.citizens) // (Country, [Citizen])
+        - Child.all().including(Child.parent)       // (Child, Parent)
+
+    The goal is that the method does not reflect the SQL, but the effect: here, all associated models are fetched along
+
+    - [ ] to-one associations declare the optionality of the associated model
+
+        - Child.all().including(Child.parent)         // (Child, Parent)
+        - Child.all().including(Child.optionalParent) // (Child, Parent?)
+
+    The goal is to have optionality declared right away, as a reminder of the database schema.
+- [ ] `belongs(to:)`, `belongs(toOptional:)`, `has(one:)`, `has(oneOptional:)`, `has(many:)`
+- [ ] Remove the tuple names in results fetched from JoinedPair: `(left: X, right: Y)` -> `(X, Y)`
+- [ ] Consider removing the `record.request(_:)` method for to-one associations. `fetchOne` looks enough.
+- [ ] Turning a non-optional to an optional association. Use case: derive `belongsTo(optional: Author.self).filter(Column("isDead"))` from `belongsTo(Author.self)`
+- [ ] Turning an optional to a non-optional association. For example: `Book.including(mandatory: Book.belongsTo(optional: Author.self).filter(Column("gender") == "female")).fetchAll(db) => [(Book, Author)]`
+
 Not sure
 
 - [ ] Support for resource values (see https://developer.apple.com/library/ios/qa/qa1719/_index.html)
