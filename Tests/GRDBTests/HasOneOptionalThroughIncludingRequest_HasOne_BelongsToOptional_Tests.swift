@@ -259,8 +259,8 @@ class HasOneOptionalThroughIncludingRequest_HasOne_BelongsToOptional_Tests: GRDB
         
         try dbQueue.inDatabase { db in
             do {
-                let middleAssociation = Person.hasOne(Person.self, foreignKey: ["childId"])
-                let rightAssociation = Person.belongsTo(optional: Person.self, foreignKey: ["parentId"])
+                let middleAssociation = Person.hasOne(Person.self, foreignKey: [Column("childId")])
+                let rightAssociation = Person.belongsTo(optional: Person.self, foreignKey: [Column("parentId")])
                 let association = Person.hasOne(optional: rightAssociation, through: middleAssociation)
                 let request = Person.including(association)
                 try assertEqualSQL(db, request, """

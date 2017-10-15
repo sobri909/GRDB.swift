@@ -27,34 +27,30 @@ GRDB Associations
 For example, consider an application that defines two record types for authors and books. Each author can have many books:
 
 ```swift
-class Author: Record { ... }
-class Book: Record { ... }
+struct Author { ... }
+struct Book { ... }
 ```
 
 Without associations, loading books from authors would look like:
 
 ```swift
 // All books written by an author:
-let author = ...
-let books = try dbQueue.inDatabase { db in
-    return try Book
-        .filter(Book.Columns.authorId == author.id)
-        .fetchAll(db)
-}
+let author: Author = ...
+let books: [Book] = try Book
+    .filter(Book.Columns.authorId == author.id)
+    .fetchAll(db)
 
 // All authors with their books:
-let allAuthorsWithTheirBooks: [(Author, [Book])] = try dbQueue.inDatabase { db in
-    let authors = try Author.fetchAll(db)
-    return try authors.map { author in
-        let books = try Book
-            .filter(Book.Columns.authorId == author.id)
-            .fetchAll(db)
-        return (author, books)
-    }
+let authors = try Author.fetchAll(db)
+let allAuthorsWithTheirBooks: [(Author, [Book])] = try authors.map { author in
+    let books = try Book
+        .filter(Book.Columns.authorId == author.id)
+        .fetchAll(db)
+    return (author, books)
 }
 ```
 
-With associations, this code can be streamlined. Associations are declared in the record types:
+With associations, this code can be streamlined. Associations are usually declared in the record types:
 
 ```swift
 class Author: Record {
@@ -63,22 +59,20 @@ class Author: Record {
 }
 ```
 
-After the `Author.books` association has been declared, loading books is much easier:
+The `Author.books` association can then help fetching books:
 
 ```swift
 // All books written by an author:
-let author = ...
-let books = try dbQueue.inDatabase { db in
-    return try author.fetchAll(db, Author.books)
-}
+let author: Author = ...
+let books: [Book] = try author.fetchAll(db, Author.books)
 
 // All authors with their books:
-let allAuthorsWithTheirBooks: [(Author, [Book])] = try dbQueue.inDatabase { db in
-    return Author.including(Author.books).fetchAll(db)
-}
+let allAuthorsWithTheirBooks: [(Author, [Book])] = Author
+    .including(Author.books)
+    .fetchAll(db)
 ```
 
-Associations bring simpler APIs for a lot more operations. We'll introduce below the various kinds of associations, and then provide the reference to their methods and options.
+Associations bring more APIs that involve several associated record types. We'll introduce below the various kinds of associations, and then provide the reference to their methods and options.
 
 
 The Types of Associations
@@ -92,9 +86,9 @@ GRDB handles five types of associations:
 - HasOne
 - HasOneThrough
 
-An association declares a link from a record type to another, as in "one book *belongs to* its author". It instructs GRDB to use the primary and foreign keys declared in the database as support for Swift methods.
+An association declares a link from a record type to another, as in "one book *belongs to* its author". It instructs GRDB to use the foreign keys declared in the database as support for Swift methods.
 
-Each one of the eight types of associations is appropriate for a particular database situation.
+Each one of the five types of associations is appropriate for a particular database situation.
 
 
 ## BelongsTo
@@ -104,7 +98,7 @@ The *BelongsTo* association sets up a one-to-one connection from a record type t
 For example, if your application includes authors and books, and each book is assigned its author, you'd declare the association this way:
 
 ```swift
-class Book: Record {
+struct Book {
     // When the database always has an author for a book:
     static let author = belongsTo(Author.self)
     
@@ -113,7 +107,7 @@ class Book: Record {
     ...
 }
 
-class Author: Record {
+struct Author {
     ...
 }
 ```
@@ -124,7 +118,7 @@ A book **belongs to** its author:
 
 ¹ `authorId` is a *foreign key* to the `authors` table.
 
-The matching [migration](http://github.com/groue/GRDB.swift#migrations) would look like:
+The matching [migration] would look like:
 
 ```swift
 migrator.registerMigration("Books and Authors") { db in
@@ -146,10 +140,10 @@ migrator.registerMigration("Books and Authors") { db in
 
 The *HasOne* association also sets up a one-to-one connection from a record type to another record type, but with different semantics, and underlying database schema. It is usually used when an entity has been denormalized into two database tables.
 
-For example, if your application includes countries and their demographic profiles, and each country has its demographic profile, you'd declare the association this way:
+For example, if your application has one database table for countries, and another for their demographic profiles, you'd declare the association this way:
 
 ```swift
-class Country: Record {
+struct Country {
     // When the database always has a demographic profile for a country:
     static let profile = hasOne(DemographicProfile.self)
     
@@ -158,7 +152,7 @@ class Country: Record {
     ...
 }
 
-class DemographicProfile: Record {
+struct DemographicProfile {
     ...
 }
 ```
@@ -169,7 +163,7 @@ A country **has one** demographic profile:
 
 ¹ `countryCode` is a *foreign key* to the `countries` table. It is *uniquely indexed* to guarantee the unicity of a country's profile.
 
-The matching [migration](http://github.com/groue/GRDB.swift#migrations) would look like:
+The matching [migration] would look like:
 
 ```swift
 migrator.registerMigration("Countries and DemographicProfiles") { db in
@@ -196,11 +190,11 @@ The *HasMany* association indicates a one-to-many connection between two record 
 For example, if your application includes authors and books, and each author is assigned zero or more books, you'd declare the association this way:
 
 ```swift
-class Author: Record {
+struct Author {
     static let books = hasMany(Book.self)
 }
 
-class Book: Record {
+struct Book {
     ...
 }
 ```
@@ -209,9 +203,9 @@ An author **has many** books:
 
 ![HasManyDatabase](https://cdn.rawgit.com/groue/GRDB.swift/Graph/Documentation/Images/HasManyDatabase.svg)
 
-¹ `authorId` is a *foreign key* to the `authors` table. It is *indexed* to ease the selection of books belonging to a specific author.
+¹ `authorId` is a *foreign key* to the `authors` table. It should be *indexed* to ease the selection of books belonging to a specific author.
 
-The matching [migration](http://github.com/groue/GRDB.swift#migrations) would look like:
+The matching [migration] would look like:
 
 ```swift
 migrator.registerMigration("Books and Authors") { db in
@@ -234,21 +228,21 @@ migrator.registerMigration("Books and Authors") { db in
 
 The *HasManyThrough* association sets up a one-to-many connection between two record types, *through* a third record. You declare this association by linking two other associations together.
 
-For example, consider an application that includes countries, passports, and citizens. You'd declare a *HasManyThrough* association between countries and citizens by linking a *HasMany* association from countries to passports, and a *BelongsTo* association from passports to citizens:
+For example, consider an application that includes countries, passports, and citizens. You'd declare a *HasManyThrough* association between a country and its citizens through passports. To declare that association, link the *HasMany* association from countries to passports, and the *BelongsTo* association from passports to citizens:
 
 ```swift
-class Country : Record {
+struct Country {
     static let passports = hasMany(Passport.self)
     static let citizens = hasMany(Passport.citizen, through: passports)
     ...
 }
 
-class Passport : Record {
+struct Passport {
     static let citizen = belongsTo(Citizen.self)
     ...
 }
 
-class Citizen : Record {
+struct Citizen {
     ...
 }
 ```
@@ -261,7 +255,7 @@ A country **has many** citizens **through** passports:
 
 ² `citizenId` is a *foreign key* to the `citizens` table.
 
-The matching [migration](http://github.com/groue/GRDB.swift#migrations) would look like:
+The matching [migration] would look like:
 
 ```swift
 migrator.registerMigration("Countries, Passports, and Citizens") { db in
@@ -293,21 +287,21 @@ migrator.registerMigration("Countries, Passports, and Citizens") { db in
 
 The *HasOneThrough* association sets up a one-to-one connection between two record types, *through* a third record. You declare this association by linking two other one-to-one associations together.
 
-For example, consider an application that includes books, libraries, and addresses. You'd declare that each book has its return address by linking a *BelongsTo* association from books to libraries, and a *HasOne* association from libraries to addresses:
+For example, consider an application that includes books, libraries, and addresses. You'd declare that each book has a return address by linking the *BelongsTo* association from books to libraries, and the *HasOne* association from libraries to their addresses:
 
 ```swift
-class Book : Record {
+struct Book {
     static let library = belongsTo(Library.self)
     static let returnAddress = hasOne(Library.address, through: library)
     ...
 }
 
-class Library : Record {
+struct Library {
     static let address = hasOne(Address.self)
     ...
 }
 
-class Address : Record {
+struct Address {
     ...
 }
 ```
@@ -320,7 +314,7 @@ A book **has one** return address **through** its library:
 
 ² `libraryId` is both the *primary key* of the `addresses` table, and a *foreign key* to the `libraries` table.
 
-The matching [migration](http://github.com/groue/GRDB.swift#migrations) would look like:
+The matching [migration] would look like:
 
 ```swift
 migrator.registerMigration("Books, Libraries, and Addresses") { db in
@@ -371,12 +365,12 @@ class DemographicProfile: Record {
 ```
 
 
-## Self Joins
+## Self-Joining Associations
 
-In designing a data model, you will sometimes find a model that should have a relation to itself. For example, you may want to store all employees in a single database model, but be able to trace relationships such as between manager and subordinates. This situation can be modeled with self-joining associations:
+In designing a database schema, you will sometimes find a record that should have a relation to itself. For example, you may want to store all employees in a single database table, but be able to trace relationships such as between manager and subordinates. This situation can be modeled with self-joining associations:
 
 ```swift
-class Employee: Record {
+struct Employee {
     static let manager = belongsTo(optional: Employee.self)
     static let subordinates = hasMany(Employee.self)
     ...
@@ -385,13 +379,15 @@ class Employee: Record {
 
 ![SelfJoinSchema](https://cdn.rawgit.com/groue/GRDB.swift/Graph/Documentation/Images/SelfJoinSchema.svg)
 
-The matching [migration](http://github.com/groue/GRDB.swift#migrations) would look like:
+The matching [migration] would look like:
 
 ```swift
 migrator.registerMigration("Employees") { db in
     try db.create(table: "employees") { t in
         t.column("id", .integer).primaryKey()
-        t.column("managerId", .integer).references("employees")
+        t.column("managerId", .integer)
+            .indexed()
+            .references("employees", onDelete: .setNull)
         t.column("name", .text)
     }
 }
@@ -404,16 +400,16 @@ Associations and the Database Schema
 In all examples above, we have defined associations without giving the name of any database column:
 
 ```swift
-class Author: Record {
+struct Author {
     static let books = hasMany(Book.self)
 }
 
-class Book: Record {
+struct Book {
     static let author = belongsTo(Author.self)
 }
 ```
 
-This concise definition of association is possible when the database schema defines the primary and foreign keys that support the association. For example,  in the migration below, the `authors` table has a primary key, and the `books` table has a foreign key:
+This concise definition of association is possible when the database schema defines without any ambiguity the foreign and primary keys that support the association. For example, in the migration below, the `authors` table has a primary key, and the `books` table has a foreign key:
 
 ```swift
 migrator.registerMigration("Books and Authors") { db in
@@ -432,37 +428,57 @@ migrator.registerMigration("Books and Authors") { db in
 }
 ```
 
-Sometimes the database schema is ambiguous. This happens when a table defines several foreign keys to another table. This also happens when the schema is loose, and does not define any foreign or primary key at all.
+Yet sometimes the database schema is ambiguous. This happens when a table defines several foreign keys to another table. This also happens when the schema is loose, and does not define any foreign or primary key at all.
 
-In this case, you must help GRDB finding the supporting columns:
+In this case, you must help associations using the proper columns:
 
-- Either by providing the column that points to the other table. This works if the target table has a primary key:
-
+- Either by providing the column(s) that point to the primary key of the other table:
+    
     ```swift
-    class Author: Record {
-        static let books = hasMany(Book.self, from: "authorId")
+    struct Author {
+        static let books = hasMany(
+            Book.self,
+            foreignKey: [Book.Columns.authorId])
     }
-
-    class Book: Record {
-        static let author = belongsTo(Author.self, from: "authorId")
+    
+    struct Book {
+        enum Columns {
+            static let authorId = Column("authorId")
+        }
+        
+        static let author = belongsTo(
+            Author.self,
+            foreignKey: [Book.Columns.authorId])
     }
     ```
 
-- Or by providing the full definition of the missing foreign key. This will always work, even if the target table has no primary key:
+- Or by providing the full definition of the foreign key:
 
     ```swift
-    class Author: Record {
-        static let books = hasMany(Book.self, from: ["authorId"], to: "[id"])
+    struct Author {
+        enum Columns {
+            static let id = Column("id")
+        }
+        
+        static let books = hasMany(
+            Book.self,
+            foreignKey: [Book.Columns.authorId],
+            to: [Author.Columns.id])
     }
-
-    class Book: Record {
-        static let author = belongsTo(Author.self, from: ["authorId"], to: ["id"])
+    
+    struct Book {
+        enum Columns {
+            static let authorId = Column("authorId")
+        }
+        
+        static let author = belongsTo(
+            Author.self,
+            foreignKey: [Book.Columns.authorId],
+            to: [Author.Columns.id])
     }
     ```
 
-- [ ] **TODO**: Let user use the `Column` type
-- [ ] **TODO**: Allow or forbid for good compound primary keys. If forbidden, there is no point providing arrays to the complete foreign key definition.
-- [ ] **TODO**: Add a tip so that users can control the generated SQL
+> :point_up: **Note**: explicit association columns are always defined with a *foreign key* from a database table to another. That foreign key is independent from the orientation of the associations, and that's why you'll use the same foreign key for both a *BelongsTo* association and its reciprocal *HasMany* association, as in the examples above.
 
 
 Detailed Association Reference
@@ -546,7 +562,7 @@ try dbQueue.inDatabase { db in
 }
 ```
 
-The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift#requests):
+The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests):
 
 ```swift
 try dbQueue.inDatabase { db in
@@ -559,7 +575,7 @@ try dbQueue.inDatabase { db in
 }
 ```
 
-You can load all associated pairs as an Array with `fetchAll`, as a Cursor with `fetchCursor`, or you can load the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift#fetching-methods) for more information:
+You can load all associated pairs as an Array with `fetchAll`, as a Cursor with `fetchCursor`, or you can load the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift/blob/master/README.md#fetching-methods) for more information:
 
 ```swift
 try dbQueue.inDatabase { db in
@@ -593,3 +609,5 @@ The fetched record is an optional even if the association has not been declared 
 ### Refining the Association
 
 - [ ] **TODO**
+
+[migration]: https://github.com/groue/GRDB.swift/blob/master/README.md#migrations

@@ -27,27 +27,42 @@ extension HasOneAssociation : RequestDerivableWrapper {
 }
 
 extension TableMapping {
-    public static func hasOne<Right>(_ right: Right.Type) -> HasOneAssociation<Self, Right> where Right: TableMapping {
+    public static func hasOne<Right>(
+        _ right: Right.Type)
+        -> HasOneAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName)
         return HasOneAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
     
-    public static func hasOne<Right>(_ right: Right.Type, foreignKey originColumns: [String]) -> HasOneAssociation<Self, Right> where Right: TableMapping {
+    public static func hasOne<Right>(
+        _ right: Right.Type,
+        foreignKey originColumns: [Column])
+        -> HasOneAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName,
-            originColumns: originColumns)
+            originColumns: originColumns.map { $0.name })
         return HasOneAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
     
-    public static func hasOne<Right>(_ right: Right.Type, foreignKey originColumns: [String], to destinationColumns: [String]) -> HasOneAssociation<Self, Right> where Right: TableMapping {
+    public static func hasOne<Right>(
+        _ right: Right.Type,
+        foreignKey originColumns: [Column],
+        to destinationColumns: [Column])
+        -> HasOneAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName,
-            originColumns: originColumns,
-            destinationColumns: destinationColumns)
+            originColumns: originColumns.map { $0.name },
+            destinationColumns: destinationColumns.map { $0.name })
         return HasOneAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
 }

@@ -27,27 +27,42 @@ extension HasManyAssociation : RequestDerivableWrapper {
 }
 
 extension TableMapping {
-    public static func hasMany<Right>(_ right: Right.Type) -> HasManyAssociation<Self, Right> where Right: TableMapping {
+    public static func hasMany<Right>(
+        _ right: Right.Type)
+        -> HasManyAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName)
         return HasManyAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
     
-    public static func hasMany<Right>(_ right: Right.Type, foreignKey originColumns: [String]) -> HasManyAssociation<Self, Right> where Right: TableMapping {
+    public static func hasMany<Right>(
+        _ right: Right.Type,
+        foreignKey originColumns: [Column])
+        -> HasManyAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName,
-            originColumns: originColumns)
+            originColumns: originColumns.map { $0.name })
         return HasManyAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
     
-    public static func hasMany<Right>(_ right: Right.Type, foreignKey originColumns: [String], to destinationColumns: [String]) -> HasManyAssociation<Self, Right> where Right: TableMapping {
+    public static func hasMany<Right>(
+        _ right: Right.Type,
+        foreignKey originColumns: [Column],
+        to destinationColumns: [Column])
+        -> HasManyAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName,
-            originColumns: originColumns,
-            destinationColumns: destinationColumns)
+            originColumns: originColumns.map { $0.name },
+            destinationColumns: destinationColumns.map { $0.name })
         return HasManyAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
 }

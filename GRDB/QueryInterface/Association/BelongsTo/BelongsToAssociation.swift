@@ -27,27 +27,42 @@ extension BelongsToAssociation : RequestDerivableWrapper {
 }
 
 extension TableMapping {
-    public static func belongsTo<Right>(_ right: Right.Type) -> BelongsToAssociation<Self, Right> where Right: TableMapping {
+    public static func belongsTo<Right>(
+        _ right: Right.Type)
+        -> BelongsToAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: databaseTableName,
             destinationTable: Right.databaseTableName)
         return BelongsToAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
     
-    public static func belongsTo<Right>(_ right: Right.Type, foreignKey originColumns: [String]) -> BelongsToAssociation<Self, Right> where Right: TableMapping {
+    public static func belongsTo<Right>(
+        _ right: Right.Type,
+        foreignKey originColumns: [Column])
+        -> BelongsToAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: databaseTableName,
             destinationTable: Right.databaseTableName,
-            originColumns: originColumns)
+            originColumns: originColumns.map { $0.name })
         return BelongsToAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
     
-    public static func belongsTo<Right>(_ right: Right.Type, foreignKey originColumns: [String], to destinationColumns: [String]) -> BelongsToAssociation<Self, Right> where Right: TableMapping {
+    public static func belongsTo<Right>(
+        _ right: Right.Type,
+        foreignKey originColumns: [Column],
+        to destinationColumns: [Column])
+        -> BelongsToAssociation<Self, Right>
+        where Right: TableMapping
+    {
         let joinMappingRequest = JoinMappingRequest(
             originTable: databaseTableName,
             destinationTable: Right.databaseTableName,
-            originColumns: originColumns,
-            destinationColumns: destinationColumns)
+            originColumns: originColumns.map { $0.name },
+            destinationColumns: destinationColumns.map { $0.name })
         return BelongsToAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
 }
