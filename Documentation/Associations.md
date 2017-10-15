@@ -27,9 +27,11 @@ GRDB Associations
 For example, consider an application that defines two record types for authors and books. Each author can have many books:
 
 ```swift
-struct Author { ... }
-struct Book { ... }
+struct Author: TableMapping, ... { ... }
+struct Book: TableMapping, ... { ... }
 ```
+
+> :point_up: **Note**: See the [Records Protocol Overview] for more information about TableMapping and other record protocols.
 
 Without associations, loading books from authors would look like:
 
@@ -98,7 +100,7 @@ The *BelongsTo* association sets up a one-to-one connection from a record type t
 For example, if your application includes authors and books, and each book is assigned its author, you'd declare the association this way:
 
 ```swift
-struct Book {
+struct Book: TableMapping, ... {
     // When the database always has an author for a book:
     static let author = belongsTo(Author.self)
     
@@ -107,7 +109,7 @@ struct Book {
     ...
 }
 
-struct Author {
+struct Author: TableMapping, ... {
     ...
 }
 ```
@@ -143,7 +145,7 @@ The *HasOne* association also sets up a one-to-one connection from a record type
 For example, if your application has one database table for countries, and another for their demographic profiles, you'd declare the association this way:
 
 ```swift
-struct Country {
+struct Country: TableMapping, ... {
     // When the database always has a demographic profile for a country:
     static let profile = hasOne(DemographicProfile.self)
     
@@ -152,7 +154,7 @@ struct Country {
     ...
 }
 
-struct DemographicProfile {
+struct DemographicProfile: TableMapping, ... {
     ...
 }
 ```
@@ -190,11 +192,11 @@ The *HasMany* association indicates a one-to-many connection between two record 
 For example, if your application includes authors and books, and each author is assigned zero or more books, you'd declare the association this way:
 
 ```swift
-struct Author {
+struct Author: TableMapping, ... {
     static let books = hasMany(Book.self)
 }
 
-struct Book {
+struct Book: TableMapping, ... {
     ...
 }
 ```
@@ -231,18 +233,18 @@ The *HasManyThrough* association sets up a one-to-many connection between two re
 For example, consider an application that includes countries, passports, and citizens. You'd declare a *HasManyThrough* association between a country and its citizens through passports. To declare that association, link the *HasMany* association from countries to passports, and the *BelongsTo* association from passports to citizens:
 
 ```swift
-struct Country {
+struct Country: TableMapping, ... {
     static let passports = hasMany(Passport.self)
     static let citizens = hasMany(Passport.citizen, through: passports)
     ...
 }
 
-struct Passport {
+struct Passport: TableMapping, ... {
     static let citizen = belongsTo(Citizen.self)
     ...
 }
 
-struct Citizen {
+struct Citizen: TableMapping, ... {
     ...
 }
 ```
@@ -290,18 +292,18 @@ The *HasOneThrough* association sets up a one-to-one connection between two reco
 For example, consider an application that includes books, libraries, and addresses. You'd declare that each book has a return address by linking the *BelongsTo* association from books to libraries, and the *HasOne* association from libraries to their addresses:
 
 ```swift
-struct Book {
+struct Book: TableMapping, ... {
     static let library = belongsTo(Library.self)
     static let returnAddress = hasOne(Library.address, through: library)
     ...
 }
 
-struct Library {
+struct Library: TableMapping, ... {
     static let address = hasOne(Address.self)
     ...
 }
 
-struct Address {
+struct Address: TableMapping, ... {
     ...
 }
 ```
@@ -370,7 +372,7 @@ class DemographicProfile: Record {
 In designing a database schema, you will sometimes find a record that should have a relation to itself. For example, you may want to store all employees in a single database table, but be able to trace relationships such as between manager and subordinates. This situation can be modeled with self-joining associations:
 
 ```swift
-struct Employee {
+struct Employee: TableMapping, ... {
     static let manager = belongsTo(optional: Employee.self)
     static let subordinates = hasMany(Employee.self)
     ...
@@ -400,11 +402,11 @@ Associations and the Database Schema
 In all examples above, we have defined associations without giving the name of any database column:
 
 ```swift
-struct Author {
+struct Author: TableMapping, ... {
     static let books = hasMany(Book.self)
 }
 
-struct Book {
+struct Book: TableMapping, ... {
     static let author = belongsTo(Author.self)
 }
 ```
@@ -435,11 +437,11 @@ In this case, you must help associations using the proper columns:
 - Either by providing the column(s) that point to the primary key of the other table:
     
     ```swift
-    struct Author {
+    struct Author: TableMapping, ... {
         static let books = hasMany(Book.self, using: ForeignKey(["authorId"]))
     }
     
-    struct Book {
+    struct Book: TableMapping, ... {
         static let author = belongsTo(Author.self, using: ForeignKey(["authorId"]))
     }
     ```
@@ -447,11 +449,11 @@ In this case, you must help associations using the proper columns:
 - Or by providing the full definition of the foreign key:
 
     ```swift
-    struct Author {
+    struct Author: TableMapping, ... {
         static let books = hasMany(Book.self, using: ForeignKey(["authorId"], to: ["id"]))
     }
     
-    struct Book {
+    struct Book: TableMapping, ... {
         static let author = belongsTo(Author.self, using: ForeignKey(["authorId"], to: ["id"]))
     }
     ```
@@ -460,11 +462,11 @@ In this case, you must help associations using the proper columns:
 Foreign keys can also be defined from columns of type `Column`:
 
 ```swift
-struct Author {
+struct Author: TableMapping, ... {
     static let books = hasMany(Book.self, using: Book.ForeignKeys.author)
 }
 
-struct Book {
+struct Book: TableMapping, ... {
     enum Columns {
         static let authorId = Column("authorId")
     }
@@ -493,28 +495,28 @@ The *BelongsTo* association sets up a one-to-one connection from a record type t
 
 To declare a *BelongsTo* association, you use one of those static methods:
 
-- `belongsTo(_:)`
-- `belongsTo(_:from:)`
-- `belongsTo(_:from:to:)`
-- `belongsTo(optional:)`
-- `belongsTo(optional:from:)`
-- `belongsTo(optional:from:to:)`
+- `belongsTo(_:using:)`
+- `belongsTo(optional:using:)`
 
 The first argument is the type of the targetted record.
 
 The `optional:` variant declares that the database may not always contain a matching record. You can think of it as the Swift `Optional` type: just as a Swift optional tells that a value may be missing, `belongsTo(optional:)` tells that an associated record may be missing in the database.
 
-Use the `from:` and `from:to:` variants when the database schema does not allow GRDB to infer the foreign key that supports the association (see [Associations and the Database Schema](#associations-and-the-database-schema)).
+The second `using:` argument is a foreign key that is only necessary when GRDB can't automatically infer the columns that supports the association from the database schema (see [Associations and the Database Schema](#associations-and-the-database-schema)).
 
 For example:
 
 ```swift
-class Book: Record {
+struct Book: TableMapping, ... {
+    // When all books have an author in the database:
     static let author = belongsTo(Author.self)
+    
+    // When some books don't have any author in the database:
+    static let author = belongsTo(optional: Author.self)
     ...
 }
 
-class Author: Record {
+struct Author: TableMapping, ... {
     ...
 }
 ```
@@ -608,3 +610,4 @@ The fetched record is an optional even if the association has not been declared 
 - [ ] **TODO**
 
 [migration]: https://github.com/groue/GRDB.swift/blob/master/README.md#migrations
+[Records Protocol Overview]: https://github.com/groue/GRDB.swift/blob/master/README.md#record-protocols-overview
