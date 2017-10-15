@@ -141,17 +141,17 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: Row
     
     // MARK: Fetching From SelectStatement
     
-    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder)> {
+    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder)> {
         return try Row.fetchCursor(statement, arguments: arguments, adapter: adapter).map { row in
-            (left: LeftDecoder(row: leftRow(row)), right: RightDecoder(row: rightRow(row)))
+            (LeftDecoder(row: leftRow(row)), RightDecoder(row: rightRow(row)))
         }
     }
     
-    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(left: LeftDecoder, right: RightDecoder)] {
+    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(LeftDecoder, RightDecoder)] {
         return try Array(fetchCursor(statement, arguments: arguments, adapter: adapter))
     }
     
-    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (left: LeftDecoder, right: RightDecoder)? {
+    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (LeftDecoder, RightDecoder)? {
         return try fetchCursor(statement, arguments: arguments, adapter: adapter).next()
     }
 }
@@ -160,32 +160,32 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: Row
     
     // MARK: Fetching From Request
     
-    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder)> {
+    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder)> {
         let (statement, adapter) = try request.prepare(db)
         return try fetchCursor(statement, adapter: adapter)
     }
     
-    static func fetchAll(_ db: Database, _ request: Request) throws -> [(left: LeftDecoder, right: RightDecoder)] {
+    static func fetchAll(_ db: Database, _ request: Request) throws -> [(LeftDecoder, RightDecoder)] {
         let (statement, adapter) = try request.prepare(db)
         return try fetchAll(statement, adapter: adapter)
     }
     
-    static func fetchOne(_ db: Database, _ request: Request) throws -> (left: LeftDecoder, right: RightDecoder)? {
+    static func fetchOne(_ db: Database, _ request: Request) throws -> (LeftDecoder, RightDecoder)? {
         let (statement, adapter) = try request.prepare(db)
         return try fetchOne(statement, adapter: adapter)
     }
 }
 
 extension TypedRequest where RowDecoder: JoinedPairDecoder, RowDecoder.LeftDecoder: RowConvertible, RowDecoder.RightDecoder: RowConvertible {
-    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder)> {
+    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (RowDecoder.LeftDecoder, RowDecoder.RightDecoder)> {
         return try RowDecoder.fetchCursor(db, self)
     }
     
-    public func fetchAll(_ db: Database) throws -> [(left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder)] {
+    public func fetchAll(_ db: Database) throws -> [(RowDecoder.LeftDecoder, RowDecoder.RightDecoder)] {
         return try RowDecoder.fetchAll(db, self)
     }
     
-    public func fetchOne(_ db: Database) throws -> (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder)? {
+    public func fetchOne(_ db: Database) throws -> (RowDecoder.LeftDecoder, RowDecoder.RightDecoder)? {
         return try RowDecoder.fetchOne(db, self)
     }
 }
@@ -196,17 +196,17 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: Dat
     
     // MARK: Fetching From SelectStatement
     
-    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder)> {
+    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder)> {
         return try Row.fetchCursor(statement, arguments: arguments, adapter: adapter).map { row in
-            (left: LeftDecoder(row: leftRow(row)), right: rightRow(row)[0])
+            (LeftDecoder(row: leftRow(row)), rightRow(row)[0])
         }
     }
     
-    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(left: LeftDecoder, right: RightDecoder)] {
+    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(LeftDecoder, RightDecoder)] {
         return try Array(fetchCursor(statement, arguments: arguments, adapter: adapter))
     }
     
-    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (left: LeftDecoder, right: RightDecoder)? {
+    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (LeftDecoder, RightDecoder)? {
         return try fetchCursor(statement, arguments: arguments, adapter: adapter).next()
     }
 }
@@ -215,32 +215,32 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: Dat
     
     // MARK: Fetching From Request
     
-    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder)> {
+    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder)> {
         let (statement, adapter) = try request.prepare(db)
         return try fetchCursor(statement, adapter: adapter)
     }
     
-    static func fetchAll(_ db: Database, _ request: Request) throws -> [(left: LeftDecoder, right: RightDecoder)] {
+    static func fetchAll(_ db: Database, _ request: Request) throws -> [(LeftDecoder, RightDecoder)] {
         let (statement, adapter) = try request.prepare(db)
         return try fetchAll(statement, adapter: adapter)
     }
     
-    static func fetchOne(_ db: Database, _ request: Request) throws -> (left: LeftDecoder, right: RightDecoder)? {
+    static func fetchOne(_ db: Database, _ request: Request) throws -> (LeftDecoder, RightDecoder)? {
         let (statement, adapter) = try request.prepare(db)
         return try fetchOne(statement, adapter: adapter)
     }
 }
 
 extension TypedRequest where RowDecoder: JoinedPairDecoder, RowDecoder.LeftDecoder: RowConvertible, RowDecoder.RightDecoder: DatabaseValueConvertible {
-    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder)> {
+    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (RowDecoder.LeftDecoder, RowDecoder.RightDecoder)> {
         return try RowDecoder.fetchCursor(db, self)
     }
     
-    public func fetchAll(_ db: Database) throws -> [(left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder)] {
+    public func fetchAll(_ db: Database) throws -> [(RowDecoder.LeftDecoder, RowDecoder.RightDecoder)] {
         return try RowDecoder.fetchAll(db, self)
     }
     
-    public func fetchOne(_ db: Database) throws -> (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder)? {
+    public func fetchOne(_ db: Database) throws -> (RowDecoder.LeftDecoder, RowDecoder.RightDecoder)? {
         return try RowDecoder.fetchOne(db, self)
     }
 }
@@ -251,17 +251,17 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: _Op
     
     // MARK: Fetching From SelectStatement
     
-    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder._Wrapped?)> {
+    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder._Wrapped?)> {
         return try Row.fetchCursor(statement, arguments: arguments, adapter: adapter).map { row in
-            (left: LeftDecoder(row: leftRow(row)), right: RightDecoder._Wrapped(leftJoinedRow: rightRow(row)))
+            (LeftDecoder(row: leftRow(row)), RightDecoder._Wrapped(leftJoinedRow: rightRow(row)))
         }
     }
     
-    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(left: LeftDecoder, right: RightDecoder._Wrapped?)] {
+    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(LeftDecoder, RightDecoder._Wrapped?)] {
         return try Array(fetchCursor(statement, arguments: arguments, adapter: adapter))
     }
     
-    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (left: LeftDecoder, right: RightDecoder._Wrapped?)? {
+    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (LeftDecoder, RightDecoder._Wrapped?)? {
         return try fetchCursor(statement, arguments: arguments, adapter: adapter).next()
     }
 }
@@ -270,32 +270,32 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: _Op
     
     // MARK: Fetching From Request
     
-    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder._Wrapped?)> {
+    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder._Wrapped?)> {
         let (statement, adapter) = try request.prepare(db)
         return try fetchCursor(statement, adapter: adapter)
     }
     
-    static func fetchAll(_ db: Database, _ request: Request) throws -> [(left: LeftDecoder, right: RightDecoder._Wrapped?)] {
+    static func fetchAll(_ db: Database, _ request: Request) throws -> [(LeftDecoder, RightDecoder._Wrapped?)] {
         let (statement, adapter) = try request.prepare(db)
         return try fetchAll(statement, adapter: adapter)
     }
     
-    static func fetchOne(_ db: Database, _ request: Request) throws -> (left: LeftDecoder, right: RightDecoder._Wrapped?)? {
+    static func fetchOne(_ db: Database, _ request: Request) throws -> (LeftDecoder, RightDecoder._Wrapped?)? {
         let (statement, adapter) = try request.prepare(db)
         return try fetchOne(statement, adapter: adapter)
     }
 }
 
 extension TypedRequest where RowDecoder: JoinedPairDecoder, RowDecoder.LeftDecoder: RowConvertible, RowDecoder.RightDecoder: _OptionalProtocol, RowDecoder.RightDecoder._Wrapped: RowConvertible {
-    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder._Wrapped?)> {
+    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (RowDecoder.LeftDecoder, RowDecoder.RightDecoder._Wrapped?)> {
         return try RowDecoder.fetchCursor(db, self)
     }
     
-    public func fetchAll(_ db: Database) throws -> [(left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder._Wrapped?)] {
+    public func fetchAll(_ db: Database) throws -> [(RowDecoder.LeftDecoder, RowDecoder.RightDecoder._Wrapped?)] {
         return try RowDecoder.fetchAll(db, self)
     }
     
-    public func fetchOne(_ db: Database) throws -> (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder._Wrapped?)? {
+    public func fetchOne(_ db: Database) throws -> (RowDecoder.LeftDecoder, RowDecoder.RightDecoder._Wrapped?)? {
         return try RowDecoder.fetchOne(db, self)
     }
 }
@@ -306,17 +306,17 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: _Op
     
     // MARK: Fetching From SelectStatement
     
-    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder._Wrapped?)> {
+    static func fetchCursor(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder._Wrapped?)> {
         return try Row.fetchCursor(statement, arguments: arguments, adapter: adapter).map { row in
-            (left: LeftDecoder(row: leftRow(row)), right: rightRow(row)[0])
+            (LeftDecoder(row: leftRow(row)), rightRow(row)[0])
         }
     }
     
-    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(left: LeftDecoder, right: RightDecoder._Wrapped?)] {
+    static func fetchAll(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> [(LeftDecoder, RightDecoder._Wrapped?)] {
         return try Array(fetchCursor(statement, arguments: arguments, adapter: adapter))
     }
     
-    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (left: LeftDecoder, right: RightDecoder._Wrapped?)? {
+    static func fetchOne(_ statement: SelectStatement, arguments: StatementArguments? = nil, adapter: RowAdapter? = nil) throws -> (LeftDecoder, RightDecoder._Wrapped?)? {
         return try fetchCursor(statement, arguments: arguments, adapter: adapter).next()
     }
 }
@@ -325,32 +325,32 @@ extension JoinedPairDecoder where LeftDecoder: RowConvertible, RightDecoder: _Op
     
     // MARK: Fetching From Request
     
-    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (left: LeftDecoder, right: RightDecoder._Wrapped?)> {
+    static func fetchCursor(_ db: Database, _ request: Request) throws -> MapCursor<RowCursor, (LeftDecoder, RightDecoder._Wrapped?)> {
         let (statement, adapter) = try request.prepare(db)
         return try fetchCursor(statement, adapter: adapter)
     }
     
-    static func fetchAll(_ db: Database, _ request: Request) throws -> [(left: LeftDecoder, right: RightDecoder._Wrapped?)] {
+    static func fetchAll(_ db: Database, _ request: Request) throws -> [(LeftDecoder, RightDecoder._Wrapped?)] {
         let (statement, adapter) = try request.prepare(db)
         return try fetchAll(statement, adapter: adapter)
     }
     
-    static func fetchOne(_ db: Database, _ request: Request) throws -> (left: LeftDecoder, right: RightDecoder._Wrapped?)? {
+    static func fetchOne(_ db: Database, _ request: Request) throws -> (LeftDecoder, RightDecoder._Wrapped?)? {
         let (statement, adapter) = try request.prepare(db)
         return try fetchOne(statement, adapter: adapter)
     }
 }
 
 extension TypedRequest where RowDecoder: JoinedPairDecoder, RowDecoder.LeftDecoder: RowConvertible, RowDecoder.RightDecoder: _OptionalProtocol, RowDecoder.RightDecoder._Wrapped: DatabaseValueConvertible {
-    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder._Wrapped?)> {
+    public func fetchCursor(_ db: Database) throws -> MapCursor<RowCursor, (RowDecoder.LeftDecoder, RowDecoder.RightDecoder._Wrapped?)> {
         return try RowDecoder.fetchCursor(db, self)
     }
     
-    public func fetchAll(_ db: Database) throws -> [(left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder._Wrapped?)] {
+    public func fetchAll(_ db: Database) throws -> [(RowDecoder.LeftDecoder, RowDecoder.RightDecoder._Wrapped?)] {
         return try RowDecoder.fetchAll(db, self)
     }
     
-    public func fetchOne(_ db: Database) throws -> (left: RowDecoder.LeftDecoder, right: RowDecoder.RightDecoder._Wrapped?)? {
+    public func fetchOne(_ db: Database) throws -> (RowDecoder.LeftDecoder, RowDecoder.RightDecoder._Wrapped?)? {
         return try RowDecoder.fetchOne(db, self)
     }
 }

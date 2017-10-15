@@ -580,8 +580,8 @@ You can load all associated pairs as an Array with `fetchAll`, as a Cursor with 
 ```swift
 try dbQueue.inDatabase { db in
     let request = Book.including(Book.author)
+    try request.fetchCursor(db) // A cursor of (Book, Author?)
     try request.fetchAll(db)    // [(Book, Author?)]
-    try request.fetchCursor(db) // DatabaseCursor<(Book, Author?)>
     try request.fetchOne(db)    // (Book, Author?)?
 }
 ```
