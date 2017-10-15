@@ -27,13 +27,13 @@ GRDB Associations
 For example, consider an application that defines two record types for authors and books. Each author can have many books:
 
 ```swift
-struct Author: TableMapping, ... { ... }
-struct Book: TableMapping, ... { ... }
+struct Author: TableMapping, RowConvertible { ... }
+struct Book: TableMapping, RowConvertible { ... }
 ```
 
-> :point_up: **Note**: See the [Records Protocol Overview] for more information about TableMapping and other record protocols.
+> :point_up: **Note**: See the [Records Protocol Overview] for more information about TableMapping and RowConvertible record protocols.
 
-Without associations, loading books from authors would look like:
+Without associations, fetching books from authors would look like:
 
 ```swift
 // All books written by an author:
@@ -55,7 +55,7 @@ let allAuthorsWithTheirBooks: [(Author, [Book])] = try authors.map { author in
 With associations, this code can be streamlined. Associations are usually declared in the record types:
 
 ```swift
-class Author: Record {
+struct Author: TableMapping, RowConvertible {
     static let books = hasMany(Book.self)
     ...
 }
@@ -100,7 +100,7 @@ The *BelongsTo* association sets up a one-to-one connection from a record type t
 For example, if your application includes authors and books, and each book is assigned its author, you'd declare the association this way:
 
 ```swift
-struct Book: TableMapping, ... {
+struct Book: TableMapping {
     // When books always have an author in the database:
     static let author = belongsTo(Author.self)
     
@@ -109,7 +109,7 @@ struct Book: TableMapping, ... {
     ...
 }
 
-struct Author: TableMapping, ... {
+struct Author: TableMapping {
     ...
 }
 ```
@@ -146,7 +146,7 @@ The *HasOne* association also sets up a one-to-one connection from a record type
 For example, if your application has one database table for countries, and another for their demographic profiles, you'd declare the association this way:
 
 ```swift
-struct Country: TableMapping, ... {
+struct Country: TableMapping {
     // When countries always have a profile in the database:
     static let profile = hasOne(DemographicProfile.self)
     
@@ -155,7 +155,7 @@ struct Country: TableMapping, ... {
     ...
 }
 
-struct DemographicProfile: TableMapping, ... {
+struct DemographicProfile: TableMapping {
     ...
 }
 ```
@@ -193,11 +193,11 @@ The *HasMany* association indicates a one-to-many connection between two record 
 For example, if your application includes authors and books, and each author is assigned zero or more books, you'd declare the association this way:
 
 ```swift
-struct Author: TableMapping, ... {
+struct Author: TableMapping {
     static let books = hasMany(Book.self)
 }
 
-struct Book: TableMapping, ... {
+struct Book: TableMapping {
     ...
 }
 ```
@@ -234,18 +234,18 @@ The *HasManyThrough* association sets up a one-to-many connection between two re
 For example, consider an application that includes countries, passports, and citizens. You'd declare a *HasManyThrough* association between a country and its citizens through passports. To declare that association, link the *HasMany* association from countries to passports, and the *BelongsTo* association from passports to citizens:
 
 ```swift
-struct Country: TableMapping, ... {
+struct Country: TableMapping {
     static let passports = hasMany(Passport.self)
     static let citizens = hasMany(Passport.citizen, through: passports)
     ...
 }
 
-struct Passport: TableMapping, ... {
+struct Passport: TableMapping {
     static let citizen = belongsTo(Citizen.self)
     ...
 }
 
-struct Citizen: TableMapping, ... {
+struct Citizen: TableMapping {
     ...
 }
 ```
@@ -293,18 +293,18 @@ The *HasOneThrough* association sets up a one-to-one connection between two reco
 For example, consider an application that includes books, libraries, and addresses. You'd declare that each book has a return address by linking the *BelongsTo* association from books to libraries, and the *HasOne* association from libraries to their addresses:
 
 ```swift
-struct Book: TableMapping, ... {
+struct Book: TableMapping {
     static let library = belongsTo(Library.self)
     static let returnAddress = hasOne(Library.address, through: library)
     ...
 }
 
-struct Library: TableMapping, ... {
+struct Library: TableMapping {
     static let address = hasOne(Address.self)
     ...
 }
 
-struct Address: TableMapping, ... {
+struct Address: TableMapping {
     ...
 }
 ```
@@ -356,12 +356,12 @@ A demographic profile **belongs to** a country, and a country **has one** demogr
 ![HasOneDatabase](https://cdn.rawgit.com/groue/GRDB.swift/Graph/Documentation/Images/HasOneDatabase.svg)
 
 ```swift
-class Country: Record {
+struct Country: TableMapping, RowConvertible {
     static let profile = hasOne(DemographicProfile.self)
     ...
 }
 
-class DemographicProfile: Record {
+struct DemographicProfile: TableMapping, RowConvertible {
     static let country = belongsTo(DemographicProfile.self)
     ...
 }
@@ -373,7 +373,7 @@ class DemographicProfile: Record {
 In designing a database schema, you will sometimes find a record that should have a relation to itself. For example, you may want to store all employees in a single database table, but be able to trace relationships such as between manager and subordinates. This situation can be modeled with self-joining associations:
 
 ```swift
-struct Employee: TableMapping, ... {
+struct Employee: TableMapping {
     static let manager = belongsTo(optional: Employee.self)
     static let subordinates = hasMany(Employee.self)
     ...
@@ -403,11 +403,11 @@ Associations and the Database Schema
 In all examples above, we have defined associations without giving the name of any database column:
 
 ```swift
-struct Author: TableMapping, ... {
+struct Author: TableMapping {
     static let books = hasMany(Book.self)
 }
 
-struct Book: TableMapping, ... {
+struct Book: TableMapping {
     static let author = belongsTo(Author.self)
 }
 ```
@@ -438,11 +438,11 @@ In this case, you must help associations using the proper columns:
 - Either by providing the column(s) that point to the primary key of the other table:
     
     ```swift
-    struct Author: TableMapping, ... {
+    struct Author: TableMapping {
         static let books = hasMany(Book.self, using: ForeignKey(["authorId"]))
     }
     
-    struct Book: TableMapping, ... {
+    struct Book: TableMapping {
         static let author = belongsTo(Author.self, using: ForeignKey(["authorId"]))
     }
     ```
@@ -450,11 +450,11 @@ In this case, you must help associations using the proper columns:
 - Or by providing the full definition of the foreign key:
 
     ```swift
-    struct Author: TableMapping, ... {
+    struct Author: TableMapping {
         static let books = hasMany(Book.self, using: ForeignKey(["authorId"], to: ["id"]))
     }
     
-    struct Book: TableMapping, ... {
+    struct Book: TableMapping {
         static let author = belongsTo(Author.self, using: ForeignKey(["authorId"], to: ["id"]))
     }
     ```
@@ -463,11 +463,11 @@ In this case, you must help associations using the proper columns:
 Foreign keys can also be defined from columns of type `Column`:
 
 ```swift
-struct Author: TableMapping, ... {
+struct Author: TableMapping {
     static let books = hasMany(Book.self, using: Book.ForeignKeys.author)
 }
 
-struct Book: TableMapping, ... {
+struct Book: TableMapping {
     enum Columns {
         static let authorId = Column("authorId")
     }
@@ -508,7 +508,7 @@ The second `using:` argument is a foreign key that is only necessary when GRDB c
 For example:
 
 ```swift
-struct Book: TableMapping, ... {
+struct Book: TableMapping {
     // When books always have an author in the database:
     static let author = belongsTo(Author.self)
     
@@ -517,7 +517,7 @@ struct Book: TableMapping, ... {
     ...
 }
 
-struct Author: TableMapping, ... {
+struct Author: TableMapping {
     ...
 }
 ```
@@ -534,10 +534,14 @@ The *BelongsTo* association adds three methods to the declaring Record:
 
 #### `Record.including(_:)`
 
-The `including(_:)` static method returns a request that loads all associated pairs as Swift tuples:
+The `including(_:)` static method returns a request that fetches all associated pairs as Swift tuples:
 
 ```swift
-class Book: Record {
+struct Author: TableMapping, RowConvertible {
+    ...
+}
+
+struct Book: TableMapping, RowConvertible {
     static let author = belongsTo(Author.self)
     ...
 }
@@ -551,7 +555,7 @@ try dbQueue.inDatabase { db in
 When the association is declared with the `optional:` variant, the right object of the tuple is optional:
 
 ```swift
-class Book: Record {
+struct Book: TableMapping, RowConvertible {
     static let author = belongsTo(optional: Author.self)
     ...
 }
@@ -562,29 +566,54 @@ try dbQueue.inDatabase { db in
 }
 ```
 
-The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests):
+You fetch all associated pairs as an Array with `fetchAll`, as a [cursor] with `fetchCursor`, or you can fetch the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift/blob/master/README.md#fetching-methods) for more information:
 
 ```swift
+try dbQueue.inDatabase { db in
+    let request = Book.including(Book.author)
+    try request.fetchCursor(db) // A cursor of (Book, Author) or (Book, Author?)
+    try request.fetchAll(db)    // [(Book, Author)] or [(Book, Author?)]
+    try request.fetchOne(db)    // (Book, Author)? or (Book, Author?)?
+}
+```
+
+##### Filtering, Ordering, Aliasing
+
+The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter` and `order` methods. In this case, filtering and ordering apply to the main record (here, Book):
+
+```swift
+// The ten cheapest thrillers, with their author:
 try dbQueue.inDatabase { db in
     let request = Book
         .including(Book.author)
         .filter(Book.Columns.genre == "Thriller")
         .order(Book.Columns.price)
-        .limit(20)
-    let results = try request.fetchAll(db) // [(Book, Author?)]
+        .limit(10)
+    let results = try request.fetchAll(db) // [(Book, Author)] or [(Book, Author?)]
 }
 ```
 
-You can load all associated pairs as an Array with `fetchAll`, as a Cursor with `fetchCursor`, or you can load the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift/blob/master/README.md#fetching-methods) for more information:
+You can also refine the association. In this case, the results depend on whether the association is optional or not.
+
+Filtering a non-optional association reduces the number of results, in order to fetch non-nil associated records:
 
 ```swift
+struct Book: TableMapping, RowConvertible {
+    static let author = belongsTo(Author.self) // Non optional association
+    ...
+}
+
+// All books by French authors
 try dbQueue.inDatabase { db in
-    let request = Book.including(Book.author)
-    try request.fetchCursor(db) // A cursor of (Book, Author?)
-    try request.fetchAll(db)    // [(Book, Author?)]
-    try request.fetchOne(db)    // (Book, Author?)?
+    let frenchAuthors = Book.author.filter(Author.Columns.countryCode == "FR")
+    let request = Book
+        .including(frenchAuthors)
+        .order(Book.Columns.title)
+    let results = try request.fetchAll(db) // [(Book, Author)]
 }
 ```
+
+Conversely, filtering an optional association does not reduce the number of results. Instead, more results have a nil associated record. TODO: this is bullshit. What can be the purpose of such a behavior? I know that LEFT JOIN works this way. But should associations do???
 
 
 #### `Record.join(_:)`
@@ -610,5 +639,6 @@ The fetched record is an optional even if the association has not been declared 
 
 - [ ] **TODO**
 
+[cursor]: https://github.com/groue/GRDB.swift/blob/master/README.md#cursors
 [migration]: https://github.com/groue/GRDB.swift/blob/master/README.md#migrations
 [Records Protocol Overview]: https://github.com/groue/GRDB.swift/blob/master/README.md#record-protocols-overview
