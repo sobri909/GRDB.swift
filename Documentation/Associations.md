@@ -436,19 +436,11 @@ In this case, you must help associations using the proper columns:
     
     ```swift
     struct Author {
-        static let books = hasMany(
-            Book.self,
-            foreignKey: [Book.Columns.authorId])
+        static let books = hasMany(Book.self, using: ForeignKey(["authorId"]))
     }
     
     struct Book {
-        enum Columns {
-            static let authorId = Column("authorId")
-        }
-        
-        static let author = belongsTo(
-            Author.self,
-            foreignKey: [Book.Columns.authorId])
+        static let author = belongsTo(Author.self, using: ForeignKey(["authorId"]))
     }
     ```
 
@@ -456,29 +448,34 @@ In this case, you must help associations using the proper columns:
 
     ```swift
     struct Author {
-        enum Columns {
-            static let id = Column("id")
-        }
-        
-        static let books = hasMany(
-            Book.self,
-            foreignKey: [Book.Columns.authorId],
-            to: [Author.Columns.id])
+        static let books = hasMany(Book.self, using: ForeignKey(["authorId"], to: ["id"]))
     }
     
     struct Book {
-        enum Columns {
-            static let authorId = Column("authorId")
-        }
-        
-        static let author = belongsTo(
-            Author.self,
-            foreignKey: [Book.Columns.authorId],
-            to: [Author.Columns.id])
+        static let author = belongsTo(Author.self, using: ForeignKey(["authorId"], to: ["id"]))
     }
     ```
+    
 
-> :point_up: **Note**: explicit association columns are always defined with a *foreign key* from a database table to another. That foreign key is independent from the orientation of the associations, and that's why you'll use the same foreign key for both a *BelongsTo* association and its reciprocal *HasMany* association, as in the examples above.
+Foreign keys can also be defined from columns of type `Column`:
+
+```swift
+struct Author {
+    static let books = hasMany(Book.self, using: Book.ForeignKeys.author)
+}
+
+struct Book {
+    enum Columns {
+        static let authorId = Column("authorId")
+    }
+    enum ForeignKeys {
+        static let author = ForeignKey([Columns.authorId]))
+    }
+    static let author = belongsTo(Author.self, using: ForeignKeys.author)
+}
+```
+
+> :point_up: **Note**: explicit association columns are always defined with a *foreign key* from a database table to another. That foreign key is independent from the orientation of the associations, and that's why you'll use the same foreign key for both an association and its reciprocal, as in the *BelongsTo/HasMany* examples above.
 
 
 Detailed Association Reference

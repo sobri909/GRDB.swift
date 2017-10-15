@@ -262,8 +262,8 @@ class HasOneThroughJoinedRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let middleAssociation = Person.hasOne(Person.self, foreignKey: [Column("childId")])
-                let rightAssociation = Person.belongsTo(Person.self, foreignKey: [Column("parentId")])
+                let middleAssociation = Person.hasOne(Person.self, using: ForeignKey([Column("childId")]))
+                let rightAssociation = Person.belongsTo(Person.self, using: ForeignKey([Column("parentId")]))
                 let association = Person.hasOne(rightAssociation, through: middleAssociation)
                 let request = Person.joined(with: association)
                 try assertEqualSQL(db, request, """

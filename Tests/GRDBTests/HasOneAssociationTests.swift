@@ -34,7 +34,7 @@ class HasOneAssociationTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentId")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -43,7 +43,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 2)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentId")], to: [Column("id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")], to: [Column("id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -78,7 +78,7 @@ class HasOneAssociationTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentId")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -87,7 +87,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentId")], to: [Column("id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")], to: [Column("id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -131,7 +131,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentId")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -140,7 +140,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentId")], to: [Column("id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")], to: [Column("id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -176,7 +176,7 @@ class HasOneAssociationTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent1Id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1Id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -185,7 +185,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent1Id\" = 1)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent1Id")], to: [Column("id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1Id")], to: [Column("id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -194,7 +194,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent1Id\" = 1)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent2Id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2Id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -203,7 +203,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent2Id\" = 1)")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent2Id")], to: [Column("id")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2Id")], to: [Column("id")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -241,7 +241,7 @@ class HasOneAssociationTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -280,7 +280,7 @@ class HasOneAssociationTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentA"), Column("parentB")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -289,7 +289,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -338,7 +338,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentA"), Column("parentB")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -347,7 +347,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -390,7 +390,7 @@ class HasOneAssociationTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent1A"), Column("parent1B")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1A"), Column("parent1B")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -399,7 +399,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent1A\" = 1) AND (\"parent1B\" = 2))")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent1A"), Column("parent1B")], to: [Column("a"), Column("b")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1A"), Column("parent1B")], to: [Column("a"), Column("b")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -408,7 +408,7 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent1A\" = 1) AND (\"parent1B\" = 2))")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent2A"), Column("parent2B")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2A"), Column("parent2B")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
@@ -417,13 +417,35 @@ class HasOneAssociationTests: GRDBTestCase {
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent2A\" = 1) AND (\"parent2B\" = 2))")
             }
             do {
-                let association = Parent.hasOne(Child.self, foreignKey: [Column("parent2A"), Column("parent2B")], to: [Column("a"), Column("b")])
+                let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2A"), Column("parent2B")], to: [Column("a"), Column("b")]))
                 try assertEqualSQL(db, Parent.all().including(association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
                     JOIN "children" ON (("children"."parent2A" = "parents"."a") AND ("children"."parent2B" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent2A\" = 1) AND (\"parent2B\" = 2))")
+            }
+        }
+    }
+    
+    func testForeignKeyDefinitionFromColumn() {
+        struct Parent : TableMapping {
+            static let databaseTableName = "parents"
+            enum Columns {
+                static let id = Column("id")
+            }
+            static let child1 = hasOne(Child.self, using: Child.ForeignKeys.parent1)
+            static let child2 = hasOne(Child.self, using: Child.ForeignKeys.parent2)
+        }
+        
+        struct Child : TableMapping {
+            static let databaseTableName = "children"
+            enum Columns {
+                static let parentId = Column("parentId")
+            }
+            enum ForeignKeys {
+                static let parent1 = ForeignKey([Columns.parentId])
+                static let parent2 = ForeignKey([Columns.parentId], to: [Parent.Columns.id])
             }
         }
     }

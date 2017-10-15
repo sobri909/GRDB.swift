@@ -28,41 +28,15 @@ extension HasOneOptionalAssociation : RequestDerivableWrapper {
 
 extension TableMapping {
     public static func hasOne<Right>(
-        optional right: Right.Type)
-        -> HasOneOptionalAssociation<Self, Right>
-        where Right: TableMapping
-    {
-        let joinMappingRequest = JoinMappingRequest(
-            originTable: Right.databaseTableName,
-            destinationTable: databaseTableName)
-        return HasOneOptionalAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
-    }
-    
-    public static func hasOne<Right>(
         optional right: Right.Type,
-        foreignKey originColumns: [Column])
+        using foreignKey: ForeignKey? = nil)
         -> HasOneOptionalAssociation<Self, Right>
         where Right: TableMapping
     {
         let joinMappingRequest = JoinMappingRequest(
             originTable: Right.databaseTableName,
             destinationTable: databaseTableName,
-            originColumns: originColumns.map { $0.name })
-        return HasOneOptionalAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
-    }
-    
-    public static func hasOne<Right>(
-        optional right: Right.Type,
-        foreignKey originColumns: [Column],
-        to destinationColumns: [Column])
-        -> HasOneOptionalAssociation<Self, Right>
-        where Right: TableMapping
-    {
-        let joinMappingRequest = JoinMappingRequest(
-            originTable: Right.databaseTableName,
-            destinationTable: databaseTableName,
-            originColumns: originColumns.map { $0.name },
-            destinationColumns: destinationColumns.map { $0.name })
+            foreignKey: foreignKey)
         return HasOneOptionalAssociation(joinMappingRequest: joinMappingRequest, rightRequest: Right.all())
     }
 }

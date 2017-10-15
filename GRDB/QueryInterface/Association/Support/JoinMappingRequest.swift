@@ -11,11 +11,12 @@ struct JoinMappingRequest {
     let originColumns: [String]?
     let destinationColumns: [String]?
     
-    init(originTable: String, destinationTable: String, originColumns: [String]? = nil, destinationColumns: [String]? = nil) {
+    init(originTable: String, destinationTable: String, foreignKey: ForeignKey?) {
         self.originTable = originTable
         self.destinationTable = destinationTable
-        self.originColumns = originColumns
-        self.destinationColumns = destinationColumns
+        
+        self.originColumns = foreignKey?.originColumns
+        self.destinationColumns = foreignKey?.destinationColumns
     }
     
     func fetchMapping(_ db: Database) throws -> [(origin: String, destination: String)] {
