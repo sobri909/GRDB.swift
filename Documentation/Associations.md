@@ -83,10 +83,10 @@ The Types of Associations
 GRDB handles five types of associations:
 
 - BelongsTo
-- HasMany
-- HasManyThrough
 - HasOne
+- HasMany
 - HasOneThrough
+- HasManyThrough
 
 An association declares a link from a record type to another, as in "one book *belongs to* its author". It instructs GRDB to use the foreign keys declared in the database as support for Swift methods.
 
@@ -101,10 +101,10 @@ For example, if your application includes authors and books, and each book is as
 
 ```swift
 struct Book: TableMapping, ... {
-    // When the database always has an author for a book:
+    // When books always have an author in the database:
     static let author = belongsTo(Author.self)
     
-    // When author can be missing:
+    // When some books don't have any author in the database:
     static let author = belongsTo(optional: Author.self)
     ...
 }
@@ -131,6 +131,7 @@ migrator.registerMigration("Books and Authors") { db in
     try db.create(table: "books") { t in
         t.column("id", .integer).primaryKey()
         t.column("authorId", .integer)
+            .notNull() // When books always have an author in the database
             .references("authors", onDelete: .cascade)
         t.column("title", .text)
     }
@@ -146,10 +147,10 @@ For example, if your application has one database table for countries, and anoth
 
 ```swift
 struct Country: TableMapping, ... {
-    // When the database always has a demographic profile for a country:
+    // When countries always have a profile in the database:
     static let profile = hasOne(DemographicProfile.self)
     
-    // When demographic profile can be missing:
+    // When some countries don't have any profile in the database:
     static let profile = hasOne(optional: DemographicProfile.self)
     ...
 }
@@ -508,7 +509,7 @@ For example:
 
 ```swift
 struct Book: TableMapping, ... {
-    // When all books have an author in the database:
+    // When books always have an author in the database:
     static let author = belongsTo(Author.self)
     
     // When some books don't have any author in the database:
