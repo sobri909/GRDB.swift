@@ -200,6 +200,34 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
         }
     }
     
+    func testLeftRightRequestDerivation() throws {
+        let dbQueue = try makeDatabaseQueue()
+        try AssociationFixture().migrator.migrate(dbQueue)
+        
+        try dbQueue.inDatabase { db in
+            let graph = try Book
+                .including(Book.author.filter(Column("birthYear") >= 1900).order(Column("name")))
+                .filter(Column("year") < 2000)
+                .order(Column("title"))
+                .fetchAll(db)
+            
+            assertEqualSQL(lastSQLQuery, """
+                    SELECT "books".*, "authors".* \
+                    FROM "books" \
+                    JOIN "authors" ON (("authors"."id" = "books"."authorId") AND ("authors"."birthYear" >= 1900)) \
+                    WHERE ("books"."year" < 2000) \
+                    ORDER BY "books"."title", "authors"."name"
+                    """)
+            
+            assertMatch(graph, [
+                (["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
+                (["id": 1, "authorId": 2, "title": "Foe", "year": 1986], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
+                (["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
+                (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
+                ])
+        }
+    }
+    
     func testRecursion() throws {
         struct Person : TableMapping {
             static let databaseTableName = "persons"
