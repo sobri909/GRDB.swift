@@ -52,18 +52,14 @@ let allAuthorsWithTheirBooks: [(Author, [Book])] = try authors.map { author in
 }
 ```
 
-With associations, this code can be streamlined. Associations are usually declared in the record types:
+With associations, this code can be streamlined:
 
 ```swift
-struct Author: TableMapping, RowConvertible {
+// Declare the association from authors to their books:
+extension Author {
     static let books = hasMany(Book.self)
-    ...
 }
-```
 
-The `Author.books` association can then help fetching books:
-
-```swift
 // All books written by an author:
 let author: Author = ...
 let books: [Book] = try author.fetchAll(db, Author.books)
