@@ -575,7 +575,7 @@ try dbQueue.inDatabase { db in
 
 ##### Filtering, Ordering, Aliasing
 
-The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter` and `order` methods. In this case, filtering and ordering apply to the main record (here, Book):
+The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter`, `order` or `limit` methods:
 
 ```swift
 // The ten cheapest thrillers, with their author:
@@ -585,11 +585,41 @@ try dbQueue.inDatabase { db in
         .filter(Book.Columns.genre == "Thriller")
         .order(Book.Columns.price)
         .limit(10)
-    let results = try request.fetchAll(db) // [(Book, Author)] or [(Book, Author?)]
+    
+    // [(Book, Author)] or [(Book, Author?)]
+    let result = try request.fetchAll(db)
 }
 ```
 
-You can also refine the association. In this case, the results depend on whether the association is optional or not.
+The association can be included at any point. The code snippet below returns the same result:
+
+```swift
+// The ten cheapest thrillers, with their author:
+try dbQueue.inDatabase { db in
+    let thrillersRequest = Book
+        .filter(Book.Columns.genre == "Thriller")
+        .order(Book.Columns.price)
+        .limit(10)
+        
+    // [(Book, Author)] or [(Book, Author?)]
+    let result = thrillersRequest
+        .including(Book.author)
+        .fetchAll(db)
+}
+```
+
+In the previous example, the `thrillersRequest` is a valid fetch request for books. You can fetch books from it:
+
+```swift
+// The ten cheapest thrillers:
+let thrillers = try thrillersRequest.fetchAll(db)
+```
+
+*This means that eventual filtering or ordering apply to the main record, not to the included records.* To filter the included records, or order the results according to the included records, you need to be explicit:
+
+TODO
+
+---
 
 Filtering a non-optional association reduces the number of results, in order to fetch non-nil associated records:
 
