@@ -544,7 +544,7 @@ struct Book: TableMapping, RowConvertible {
 
 try dbQueue.inDatabase { db in
     let request = Book.including(Book.author)
-    let results = try request.fetchAll(db) // [(Book, Author)]
+    let pairs = try request.fetchAll(db) // [(Book, Author)]
 }
 ```
 
@@ -558,7 +558,7 @@ struct Book: TableMapping, RowConvertible {
 
 try dbQueue.inDatabase { db in
     let request = Book.including(Book.author)
-    let results = try request.fetchAll(db) // [(Book, Author?)]
+    let pairs = try request.fetchAll(db) // [(Book, Author?)]
 }
 ```
 
@@ -587,7 +587,7 @@ try dbQueue.inDatabase { db in
         .limit(10)
     
     // [(Book, Author)] or [(Book, Author?)]
-    let result = try request.fetchAll(db)
+    let pairs = try request.fetchAll(db)
 }
 ```
 
@@ -602,7 +602,7 @@ try dbQueue.inDatabase { db in
         .limit(10)
         
     // [(Book, Author)] or [(Book, Author?)]
-    let result = thrillersRequest
+    let pairs = thrillersRequest
         .including(Book.author) // <- include author
         .fetchAll(db)
 }
@@ -612,7 +612,7 @@ In the previous example, the `thrillersRequest` is a valid fetch request for boo
 
 ```swift
 // The ten cheapest thrillers:
-let thrillers = try thrillersRequest.fetchAll(db)
+let books = try thrillersRequest.fetchAll(db)
 ```
 
 *This means that eventual filtering or ordering apply to the main record, not to the included records.* To filter the included records, or order the results according to the included records, you need to be explicit:
@@ -635,7 +635,7 @@ try dbQueue.inDatabase { db in
     let request = Book
         .including(frenchAuthors)
         .order(Book.Columns.title)
-    let results = try request.fetchAll(db) // [(Book, Author)]
+    let pairs = try request.fetchAll(db) // [(Book, Author)]
 }
 ```
 
