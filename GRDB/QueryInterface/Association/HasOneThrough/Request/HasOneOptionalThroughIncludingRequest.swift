@@ -1,25 +1,23 @@
-public struct HasManyThroughLeftJoinedRequest<MiddleAssociation, RightAssociation> where
-    MiddleAssociation: Association,
-    RightAssociation: Association,
+public struct HasOneOptionalThroughIncludingRequest<MiddleAssociation, RightAssociation> where
+    MiddleAssociation: AssociationToOne,
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
-    RightAssociation.LeftAssociated == MiddleAssociation.RightAssociated
+    RightAssociation: AssociationToOne,
+    MiddleAssociation.RightAssociated == RightAssociation.LeftAssociated
 {
-    public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
-    
-    var leftRequest: WrappedRequest
-    let association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>
+    let leftRequest: WrappedRequest
+    let association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>
 }
 
 // TODO: Derive conditional conformance to RequestDerivableWrapper once once SE-0143 is implemented
-extension HasManyThroughLeftJoinedRequest : RequestDerivableWrapper {
-    public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> HasManyThroughLeftJoinedRequest {
-        return HasManyThroughLeftJoinedRequest(
-            leftRequest: transform(leftRequest),
-            association: association)
+extension HasOneOptionalThroughIncludingRequest : RequestDerivableWrapper {
+    public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
+    
+    public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> HasOneOptionalThroughIncludingRequest {
+        return HasOneOptionalThroughIncludingRequest(leftRequest: transform(leftRequest), association: association)
     }
 }
 
-extension HasManyThroughLeftJoinedRequest : TypedRequest {
+extension HasOneOptionalThroughIncludingRequest : TypedRequest {
     public typealias RowDecoder = JoinedPair<MiddleAssociation.LeftAssociated, RightAssociation.RightAssociated?>
     
     public func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?) {
@@ -74,19 +72,19 @@ extension HasManyThroughLeftJoinedRequest : TypedRequest {
 }
 
 extension QueryInterfaceRequest where RowDecoder: TableMapping {
-    public func leftJoined<MiddleAssociation, RightAssociation>(with association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
-        -> HasManyThroughLeftJoinedRequest<MiddleAssociation, RightAssociation>
+    public func including<MiddleAssociation, RightAssociation>(optional association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>)
+        -> HasOneOptionalThroughIncludingRequest<MiddleAssociation, RightAssociation>
         where MiddleAssociation.LeftAssociated == RowDecoder
     {
-        return HasManyThroughLeftJoinedRequest(leftRequest: self, association: association)
+        return HasOneOptionalThroughIncludingRequest(leftRequest: self, association: association)
     }
 }
 
 extension TableMapping {
-    public static func leftJoined<MiddleAssociation, RightAssociation>(with association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
-        -> HasManyThroughLeftJoinedRequest<MiddleAssociation, RightAssociation>
+    public static func including<MiddleAssociation, RightAssociation>(optional association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>)
+        -> HasOneOptionalThroughIncludingRequest<MiddleAssociation, RightAssociation>
         where MiddleAssociation.LeftAssociated == Self
     {
-        return all().leftJoined(with: association)
+        return all().including(optional: association)
     }
 }

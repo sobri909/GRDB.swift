@@ -7,7 +7,7 @@ public struct HasManyThroughIncludingRequest<Left, MiddleAssociation, RightAssoc
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
     RightAssociation.LeftAssociated == MiddleAssociation.RightAssociated
 {
-    var leftRequest: Left
+    let leftRequest: Left
     let association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>
 }
 
@@ -143,29 +143,11 @@ extension HasManyThroughIncludingRequest where Left: QueryInterfaceRequestConver
             association: association)
     }
     
-    public func joined<Right2>(with association2: BelongsToOptionalAssociation<Left.RowDecoder, Right2>)
-        -> HasManyThroughIncludingRequest<BelongsToOptionalJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
-    {
-        // Use type inference when Swift is able to do it
-        return HasManyThroughIncludingRequest<BelongsToOptionalJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
-            association: association)
-    }
-    
     public func joined<Right2>(with association2: HasOneAssociation<Left.RowDecoder, Right2>)
         -> HasManyThroughIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
     {
         // Use type inference when Swift is able to do it
         return HasManyThroughIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
-            association: association)
-    }
-    
-    public func joined<Right2>(with association2: HasOneOptionalAssociation<Left.RowDecoder, Right2>)
-        -> HasManyThroughIncludingRequest<HasOneOptionalJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
-    {
-        // Use type inference when Swift is able to do it
-        return HasManyThroughIncludingRequest<HasOneOptionalJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>(
             leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
             association: association)
     }

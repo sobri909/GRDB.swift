@@ -4,17 +4,19 @@ public struct HasManyThroughJoinedRequest<MiddleAssociation, RightAssociation> w
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
     RightAssociation.LeftAssociated == MiddleAssociation.RightAssociated
 {
-    public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
-    
-    var leftRequest: WrappedRequest
+    let leftRequest: WrappedRequest
+    let joinOp: SQLJoinOperator
     let association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>
 }
 
 // TODO: Derive conditional conformance to RequestDerivableWrapper once once SE-0143 is implemented
 extension HasManyThroughJoinedRequest : RequestDerivableWrapper {
+    public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
+    
     public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> HasManyThroughJoinedRequest {
         return HasManyThroughJoinedRequest(
             leftRequest: transform(leftRequest),
+            joinOp: joinOp,
             association: association)
     }
 }
@@ -37,11 +39,11 @@ extension HasManyThroughJoinedRequest : TypedRequest {
         
         // ... FROM left JOIN middle JOIN right
         let joinedSource = try leftQuery.source.join(
-            .inner,
+            joinOp,
             on: association.middleAssociation.mapping(db),
             and: middleQuery.whereExpression,
             to: middleQuery.source.join(
-                .inner,
+                joinOp,
                 on: association.rightAssociation.mapping(db),
                 and: rightQuery.whereExpression,
                 to: rightQuery.source))
@@ -78,7 +80,14 @@ extension QueryInterfaceRequest where RowDecoder: TableMapping {
         -> HasManyThroughJoinedRequest<MiddleAssociation, RightAssociation>
         where MiddleAssociation.LeftAssociated == RowDecoder
     {
-        return HasManyThroughJoinedRequest(leftRequest: self, association: association)
+        return HasManyThroughJoinedRequest(leftRequest: self, joinOp: .inner, association: association)
+    }
+    
+    public func joined<MiddleAssociation, RightAssociation>(withOptional association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
+        -> HasManyThroughJoinedRequest<MiddleAssociation, RightAssociation>
+        where MiddleAssociation.LeftAssociated == RowDecoder
+    {
+        return HasManyThroughJoinedRequest(leftRequest: self, joinOp: .left, association: association)
     }
 }
 
@@ -88,5 +97,12 @@ extension TableMapping {
         where MiddleAssociation.LeftAssociated == Self
     {
         return all().joined(with: association)
+    }
+    
+    public static func joined<MiddleAssociation, RightAssociation>(withOptional association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
+        -> HasManyThroughJoinedRequest<MiddleAssociation, RightAssociation>
+        where MiddleAssociation.LeftAssociated == Self
+    {
+        return all().joined(withOptional: association)
     }
 }

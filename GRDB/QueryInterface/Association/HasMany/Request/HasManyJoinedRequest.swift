@@ -4,7 +4,8 @@ public struct HasManyJoinedRequest<Left, Right> where
 {
     public typealias WrappedRequest = QueryInterfaceRequest<Left>
     
-    var leftRequest: WrappedRequest
+    let leftRequest: WrappedRequest
+    let joinOp: SQLJoinOperator
     let association: HasManyAssociation<Left, Right>
 }
 
@@ -12,6 +13,7 @@ extension HasManyJoinedRequest : RequestDerivableWrapper {
     public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> HasManyJoinedRequest {
         return HasManyJoinedRequest(
             leftRequest: transform(leftRequest),
+            joinOp: joinOp,
             association: association)
     }
 }
@@ -23,7 +25,7 @@ extension HasManyJoinedRequest : TypedRequest {
         return try prepareJoinedPairRequest(
             db,
             left: leftRequest.query,
-            join: .inner,
+            join: joinOp,
             right: association.rightRequest.query,
             on: association.mapping(db),
             leftScope: RowDecoder.leftScope,
@@ -35,7 +37,13 @@ extension QueryInterfaceRequest where RowDecoder: TableMapping {
     public func joined<Right>(with association: HasManyAssociation<RowDecoder, Right>)
         -> HasManyJoinedRequest<RowDecoder, Right>
     {
-        return HasManyJoinedRequest(leftRequest: self, association: association)
+        return HasManyJoinedRequest(leftRequest: self, joinOp: .inner, association: association)
+    }
+    
+    public func joined<Right>(withOptional association: HasManyAssociation<RowDecoder, Right>)
+        -> HasManyJoinedRequest<RowDecoder, Right>
+    {
+        return HasManyJoinedRequest(leftRequest: self, joinOp: .left, association: association)
     }
 }
 
@@ -44,5 +52,11 @@ extension TableMapping {
         -> HasManyJoinedRequest<Self, Right>
     {
         return all().joined(with: association)
+    }
+    
+    public static func joined<Right>(withOptional association: HasManyAssociation<Self, Right>)
+        -> HasManyJoinedRequest<Self, Right>
+    {
+        return all().joined(withOptional: association)
     }
 }

@@ -2,15 +2,17 @@ public struct HasOneOptionalIncludingRequest<Left, Right> where
     Left: TableMapping,
     Right: TableMapping
 {
-    public typealias WrappedRequest = QueryInterfaceRequest<Left>
-    
-    var leftRequest: WrappedRequest
-    let association: HasOneOptionalAssociation<Left, Right>
+    let leftRequest: WrappedRequest
+    let association: HasOneAssociation<Left, Right>
 }
 
 extension HasOneOptionalIncludingRequest : RequestDerivableWrapper {
+    public typealias WrappedRequest = QueryInterfaceRequest<Left>
+    
     public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> HasOneOptionalIncludingRequest {
-        return HasOneOptionalIncludingRequest(leftRequest: transform(leftRequest), association: association)
+        return HasOneOptionalIncludingRequest(
+            leftRequest: transform(leftRequest),
+            association: association)
     }
 }
 
@@ -30,7 +32,7 @@ extension HasOneOptionalIncludingRequest : TypedRequest {
 }
 
 extension QueryInterfaceRequest where RowDecoder: TableMapping {
-    public func including<Right>(_ association: HasOneOptionalAssociation<RowDecoder, Right>)
+    public func including<Right>(optional association: HasOneAssociation<RowDecoder, Right>)
         -> HasOneOptionalIncludingRequest<RowDecoder, Right>
     {
         return HasOneOptionalIncludingRequest(leftRequest: self, association: association)
@@ -38,9 +40,9 @@ extension QueryInterfaceRequest where RowDecoder: TableMapping {
 }
 
 extension TableMapping {
-    public static func including<Right>(_ association: HasOneOptionalAssociation<Self, Right>)
+    public static func including<Right>(optional association: HasOneAssociation<Self, Right>)
         -> HasOneOptionalIncludingRequest<Self, Right>
     {
-        return all().including(association)
+        return all().including(optional: association)
     }
 }

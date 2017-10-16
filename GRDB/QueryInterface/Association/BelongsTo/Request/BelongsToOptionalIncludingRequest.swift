@@ -4,8 +4,8 @@ public struct BelongsToOptionalIncludingRequest<Left, Right> where
 {
     public typealias WrappedRequest = QueryInterfaceRequest<Left>
     
-    var leftRequest: WrappedRequest
-    let association: BelongsToOptionalAssociation<Left, Right>
+    let leftRequest: WrappedRequest
+    let association: BelongsToAssociation<Left, Right>
 }
 
 extension BelongsToOptionalIncludingRequest : RequestDerivableWrapper {
@@ -32,7 +32,7 @@ extension BelongsToOptionalIncludingRequest : TypedRequest {
 }
 
 extension QueryInterfaceRequest where RowDecoder: TableMapping {
-    public func including<Right>(_ association: BelongsToOptionalAssociation<RowDecoder, Right>)
+    public func including<Right>(optional association: BelongsToAssociation<RowDecoder, Right>)
         -> BelongsToOptionalIncludingRequest<RowDecoder, Right>
     {
         return BelongsToOptionalIncludingRequest(leftRequest: self, association: association)
@@ -40,9 +40,9 @@ extension QueryInterfaceRequest where RowDecoder: TableMapping {
 }
 
 extension TableMapping {
-    public static func including<Right>(_ association: BelongsToOptionalAssociation<Self, Right>)
+    public static func including<Right>(optional association: BelongsToAssociation<Self, Right>)
         -> BelongsToOptionalIncludingRequest<Self, Right>
     {
-        return all().including(association)
+        return all().including(optional: association)
     }
 }

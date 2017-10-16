@@ -1,7 +1,7 @@
 public struct HasOneThroughAssociation<MiddleAssociation, RightAssociation> where
-    MiddleAssociation: AssociationToOneNonOptional,
+    MiddleAssociation: AssociationToOne,
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
-    RightAssociation: AssociationToOneNonOptional,
+    RightAssociation: AssociationToOne,
     MiddleAssociation.RightAssociated == RightAssociation.LeftAssociated
 {
     let middleAssociation: MiddleAssociation
@@ -23,10 +23,10 @@ extension TableMapping {
     public static func hasOne<MiddleAssociation, RightAssociation>(_ rightAssociation: RightAssociation, through middleAssociation: MiddleAssociation)
         -> HasOneThroughAssociation<MiddleAssociation, RightAssociation>
         where
-        MiddleAssociation: AssociationToOneNonOptional,
+        MiddleAssociation: AssociationToOne,
         MiddleAssociation.LeftAssociated == Self,
         MiddleAssociation.RightAssociated == RightAssociation.LeftAssociated,
-        RightAssociation: AssociationToOneNonOptional
+        RightAssociation: AssociationToOne
     {
         return HasOneThroughAssociation(
             middleAssociation: middleAssociation,

@@ -4,7 +4,7 @@ public struct HasManyIncludingRequest<Left, Right> where
     Left.RowDecoder: TableMapping,
     Right: TableMapping
 {
-    var leftRequest: Left
+    let leftRequest: Left
     let association: HasManyAssociation<Left.RowDecoder, Right>
 }
 
@@ -103,29 +103,11 @@ extension HasManyIncludingRequest where Left: QueryInterfaceRequestConvertible {
             association: association)
     }
 
-    public func joined<Right2>(with association2: BelongsToOptionalAssociation<Left.RowDecoder, Right2>)
-        -> HasManyIncludingRequest<BelongsToOptionalJoinedRequest<Left.RowDecoder, Right2>, Right>
-    {
-        // TODO: Use type inference when Swift is able to do it
-        return HasManyIncludingRequest<BelongsToOptionalJoinedRequest<Left.RowDecoder, Right2>, Right>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
-            association: association)
-    }
-    
     public func joined<Right2>(with association2: HasOneAssociation<Left.RowDecoder, Right2>)
         -> HasManyIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, Right>
     {
         // TODO: Use type inference when Swift is able to do it
         return HasManyIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, Right>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
-            association: association)
-    }
-    
-    public func joined<Right2>(with association2: HasOneOptionalAssociation<Left.RowDecoder, Right2>)
-        -> HasManyIncludingRequest<HasOneOptionalJoinedRequest<Left.RowDecoder, Right2>, Right>
-    {
-        // TODO: Use type inference when Swift is able to do it
-        return HasManyIncludingRequest<HasOneOptionalJoinedRequest<Left.RowDecoder, Right2>, Right>(
             leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
             association: association)
     }

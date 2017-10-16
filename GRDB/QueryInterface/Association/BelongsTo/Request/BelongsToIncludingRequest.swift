@@ -4,7 +4,7 @@ public struct BelongsToIncludingRequest<Left, Right> where
 {
     public typealias WrappedRequest = QueryInterfaceRequest<Left>
     
-    var leftRequest: WrappedRequest
+    let leftRequest: WrappedRequest
     let association: BelongsToAssociation<Left, Right>
 }
 

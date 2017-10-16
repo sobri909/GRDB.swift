@@ -4,14 +4,14 @@ public struct HasManyThroughAnnotationRequest<MiddleAssociation, RightAssociatio
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
     RightAssociation.LeftAssociated == MiddleAssociation.RightAssociated
 {
-    public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
-    
-    var leftRequest: WrappedRequest
+    let leftRequest: WrappedRequest
     let annotation: HasManyThroughAnnotation<MiddleAssociation, RightAssociation, Annotation>
 }
 
 // TODO: Derive conditional conformance to RequestDerivableWrapper once once SE-0143 is implemented
 extension HasManyThroughAnnotationRequest : RequestDerivableWrapper {
+    public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
+    
     public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> HasManyThroughAnnotationRequest {
         return HasManyThroughAnnotationRequest(
             leftRequest: transform(leftRequest),

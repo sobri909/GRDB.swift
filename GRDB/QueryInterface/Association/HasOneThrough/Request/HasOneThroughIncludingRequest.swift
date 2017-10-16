@@ -1,10 +1,10 @@
 public struct HasOneThroughIncludingRequest<MiddleAssociation, RightAssociation> where
-    MiddleAssociation: AssociationToOneNonOptional,
+    MiddleAssociation: AssociationToOne,
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
-    RightAssociation: AssociationToOneNonOptional,
+    RightAssociation: AssociationToOne,
     MiddleAssociation.RightAssociated == RightAssociation.LeftAssociated
 {
-    var leftRequest: QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
+    let leftRequest: QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
     let association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>
 }
 

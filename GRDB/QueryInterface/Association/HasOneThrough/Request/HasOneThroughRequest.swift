@@ -1,7 +1,7 @@
 public struct HasOneThroughRequest<MiddleAssociation, RightAssociation> where
-    MiddleAssociation: AssociationToOneNonOptional,
+    MiddleAssociation: AssociationToOne,
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
-    RightAssociation: AssociationToOneNonOptional,
+    RightAssociation: AssociationToOne,
     MiddleAssociation.RightAssociated == RightAssociation.LeftAssociated,
     MiddleAssociation.LeftAssociated: MutablePersistable
 {

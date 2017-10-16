@@ -4,7 +4,7 @@ public struct HasManyAnnotationRequest<Left, Right, Annotation> where
 {
     public typealias WrappedRequest = QueryInterfaceRequest<Left>
     
-    var leftRequest: WrappedRequest
+    let leftRequest: WrappedRequest
     let annotation: HasManyAnnotation<Left, Right, Annotation>
 }
 

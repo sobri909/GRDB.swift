@@ -1,11 +1,12 @@
 // TODO: consider only using left joins for this kind of query
 public struct HasOneThroughJoinedRequest<MiddleAssociation, RightAssociation> where
-    MiddleAssociation: AssociationToOneNonOptional,
+    MiddleAssociation: AssociationToOne,
     RightAssociation: RequestDerivableWrapper, // TODO: Remove once SE-0143 is implemented
-    RightAssociation: AssociationToOneNonOptional,
+    RightAssociation: AssociationToOne,
     MiddleAssociation.RightAssociated == RightAssociation.LeftAssociated
 {
-    var leftRequest: QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
+    let leftRequest: QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
+    let joinOp: SQLJoinOperator
     let association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>
 }
 
@@ -14,7 +15,10 @@ extension HasOneThroughJoinedRequest : RequestDerivableWrapper {
     public typealias WrappedRequest = QueryInterfaceRequest<MiddleAssociation.LeftAssociated>
     
     public func mapRequest(_ transform: (QueryInterfaceRequest<MiddleAssociation.LeftAssociated>) -> (QueryInterfaceRequest<MiddleAssociation.LeftAssociated>)) -> HasOneThroughJoinedRequest {
-        return HasOneThroughJoinedRequest(leftRequest: transform(leftRequest), association: association)
+        return HasOneThroughJoinedRequest(
+            leftRequest: transform(leftRequest),
+            joinOp: joinOp,
+            association: association)
     }
 }
 
@@ -22,18 +26,6 @@ extension HasOneThroughJoinedRequest : TypedRequest {
     public typealias RowDecoder = MiddleAssociation.LeftAssociated
     
     public func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?) {
-        // Generates SELECT left.* FROM left LEFT JOIN middle LEFT JOIN right
-        //
-        // We use LEFT JOIN because:
-        //
-        // 1. HasOneThroughAssociation assumes the database has a right item for
-        //    every left item.
-        // 2. Hence JOIN and LEFT JOIN are assumed to produce the same results.
-        // 3. If the database happens not to always have a right item for every
-        //    left item, using JOIN would miss some left items.
-        // 4. Hence we prefer using LEFT JOIN because it does less harm to the
-        ///   users who should have used HasOneOptionalThroughAssociation.
-        
         // Qualify queries
         var leftQualifier = SQLSourceQualifier()
         var middleQualifier = SQLSourceQualifier()
@@ -43,13 +35,13 @@ extension HasOneThroughJoinedRequest : TypedRequest {
         let rightQuery = association.rightAssociation.rightRequest.query.qualified(by: &rightQualifier)
         try [leftQualifier, middleQualifier, rightQualifier].resolveAmbiguities()
         
-        // ... FROM left LEFT JOIN middle LEFT JOIN right
+        // ... FROM left JOIN middle JOIN right
         let joinedSource = try leftQuery.source.join(
-            .left,
+            joinOp,
             on: association.middleAssociation.mapping(db),
             and: middleQuery.whereExpression,
             to: middleQuery.source.join(
-                .left,
+                joinOp,
                 on: association.rightAssociation.mapping(db),
                 and: rightQuery.whereExpression,
                 to: rightQuery.source))
@@ -73,7 +65,14 @@ extension QueryInterfaceRequest where RowDecoder: TableMapping {
         -> HasOneThroughJoinedRequest<MiddleAssociation, RightAssociation>
         where MiddleAssociation.LeftAssociated == RowDecoder
     {
-        return HasOneThroughJoinedRequest(leftRequest: self, association: association)
+        return HasOneThroughJoinedRequest(leftRequest: self, joinOp: .inner, association: association)
+    }
+    
+    public func joined<MiddleAssociation, RightAssociation>(withOptional association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>)
+        -> HasOneThroughJoinedRequest<MiddleAssociation, RightAssociation>
+        where MiddleAssociation.LeftAssociated == RowDecoder
+    {
+        return HasOneThroughJoinedRequest(leftRequest: self, joinOp: .left, association: association)
     }
 }
 
@@ -83,5 +82,12 @@ extension TableMapping {
         where MiddleAssociation.LeftAssociated == Self
     {
         return all().joined(with: association)
+    }
+    
+    public static func joined<MiddleAssociation, RightAssociation>(withOptional association: HasOneThroughAssociation<MiddleAssociation, RightAssociation>)
+        -> HasOneThroughJoinedRequest<MiddleAssociation, RightAssociation>
+        where MiddleAssociation.LeftAssociated == Self
+    {
+        return all().joined(withOptional: association)
     }
 }
