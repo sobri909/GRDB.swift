@@ -581,7 +581,7 @@ The request returned by `including(_:)` can be further refined just like other [
 // The ten cheapest thrillers, with their author:
 try dbQueue.inDatabase { db in
     let request = Book
-        .including(Book.author)
+        .including(Book.author) // <- include author
         .filter(Book.Columns.genre == "Thriller")
         .order(Book.Columns.price)
         .limit(10)
@@ -603,7 +603,7 @@ try dbQueue.inDatabase { db in
         
     // [(Book, Author)] or [(Book, Author?)]
     let result = thrillersRequest
-        .including(Book.author)
+        .including(Book.author) // <- include author
         .fetchAll(db)
 }
 ```
