@@ -10,7 +10,7 @@ import XCTest
 private typealias Reader = HasManyThrough_BelongsTo_HasMany_Fixture.Reader
 private typealias Book = HasManyThrough_BelongsTo_HasMany_Fixture.Book
 
-class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
+class HasManyThroughFlatIncludingOptionalRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
     
     // TODO: conditions on middle table
     
@@ -20,7 +20,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Reader
-                .leftJoined(with: Reader.books)
+                .flatIncluding(optional: Reader.books)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -53,7 +53,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
                 // filter before
                 let graph = try Reader
                     .filter(Column("email") != "barbara@example.com")
-                    .leftJoined(with: Reader.books)
+                    .flatIncluding(optional: Reader.books)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -77,7 +77,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Reader
-                    .leftJoined(with: Reader.books)
+                    .flatIncluding(optional: Reader.books)
                     .filter(Column("email") != "barbara@example.com")
                     .fetchAll(db)
                 
@@ -103,7 +103,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
                 // order before
                 let graph = try Reader
                     .order(Column("email").desc)
-                    .leftJoined(with: Reader.books)
+                    .flatIncluding(optional: Reader.books)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -130,7 +130,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
             do {
                 // order after
                 let graph = try Reader
-                    .leftJoined(with: Reader.books)
+                    .flatIncluding(optional: Reader.books)
                     .order(Column("email").desc)
                     .fetchAll(db)
                 
@@ -165,7 +165,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
             do {
                 // filtered books
                 let graph = try Reader
-                    .leftJoined(with: Reader.books.filter(Column("title") != "Walden"))
+                    .flatIncluding(optional: Reader.books.filter(Column("title") != "Walden"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -190,7 +190,7 @@ class HasManyThroughLeftJoinedRequest_BelongsTo_HasMany_Tests: GRDBTestCase {
             do {
                 // ordered books
                 let graph = try Reader
-                    .leftJoined(with: Reader.books.order(Column("title")))
+                    .flatIncluding(optional: Reader.books.order(Column("title")))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """

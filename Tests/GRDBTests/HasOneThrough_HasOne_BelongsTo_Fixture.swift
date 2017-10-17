@@ -12,8 +12,6 @@ struct HasOneThrough_HasOne_BelongsTo_Fixture {
     // Country <- CountryProfile -> Continent
     struct Country : Codable, TableMapping, RowConvertible, Persistable {
         static let databaseTableName = "countries"
-        static let optionalProfile = hasOne(optional: CountryProfile.self)
-        static let optionalContinent = hasOne(optional: CountryProfile.optionalContinent, through: profile)
         static let profile = hasOne(CountryProfile.self)
         static let continent = hasOne(CountryProfile.continent, through: profile)
         let code: String
@@ -28,7 +26,6 @@ struct HasOneThrough_HasOne_BelongsTo_Fixture {
     
     struct CountryProfile : Codable, TableMapping, RowConvertible, Persistable {
         static let databaseTableName = "countryProfiles"
-        static let optionalContinent = belongsTo(optional: Continent.self)
         static let continent = belongsTo(Continent.self)
         let countryCode: String
         let continentId: Int64?

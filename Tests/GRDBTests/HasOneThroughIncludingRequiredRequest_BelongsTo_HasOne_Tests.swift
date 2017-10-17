@@ -19,7 +19,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         
         try dbQueue.inDatabase { db in
             let graph = try Book
-                .including(Book.libraryAddress)
+                .including(required: Book.libraryAddress)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -49,7 +49,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 // filter before
                 let graph = try Book
                     .filter(Column("title") != "Walden")
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -72,7 +72,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             do {
                 // filter after
                 let graph = try Book
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                     .filter(Column("title") != "Walden")
                     .fetchAll(db)
                 
@@ -97,7 +97,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 // order before
                 let graph = try Book
                     .order(Column("title").desc)
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -121,7 +121,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             do {
                 // order after
                 let graph = try Book
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                     .order(Column("title").desc)
                     .fetchAll(db)
                 
@@ -154,7 +154,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 let middleAssociation = Book.library.filter(Column("name") != "Secret Library")
                 let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
-                    .including(association)
+                    .including(required: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -176,7 +176,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 let middleAssociation = Book.library.order(Column("name").desc)
                 let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
-                    .including(association)
+                    .including(required: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -205,7 +205,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         try dbQueue.inDatabase { db in
             do {
                 let graph = try Book
-                    .including(Book.libraryAddress.filter(Column("city") != "Paris"))
+                    .including(required: Book.libraryAddress.filter(Column("city") != "Paris"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -224,7 +224,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             
             do {
                 let graph = try Book
-                    .including(Book.libraryAddress.order(Column("city").desc))
+                    .including(required: Book.libraryAddress.order(Column("city").desc))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -266,7 +266,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 let middleAssociation = Person.belongsTo(Person.self, using: ForeignKey([Column("parentId")]))
                 let rightAssociation = Person.hasOne(Person.self, using: ForeignKey([Column("childId")]))
                 let association = Person.hasOne(rightAssociation, through: middleAssociation)
-                let request = Person.including(association)
+                let request = Person.including(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".*, "persons3".* \
                     FROM "persons" "persons1" \
@@ -287,7 +287,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 let request = Book.all()
                     .aliased("c")
                     .filter(Column("title") != "Walden")
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
                     SELECT "c".*, "libraryAddresses".* \
                     FROM "books" "c" \
@@ -301,7 +301,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 // alias last
                 let request = Book
                     .filter(Column("title") != "Walden")
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                     .aliased("c")
                 try assertEqualSQL(db, request, """
                     SELECT "c".*, "libraryAddresses".* \
@@ -316,7 +316,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
                 let request = Book.all()
                     .aliased("books")
-                    .including(Book.libraryAddress)
+                    .including(required: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
@@ -334,7 +334,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         try dbQueue.inDatabase { db in
             do {
                 let association = Book.hasOne(Library.address, through: Book.library.aliased("a"))
-                let request = Book.including(association)
+                let request = Book.including(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
@@ -345,7 +345,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             do {
                 // alias with table name
                 let association = Book.hasOne(Library.address, through: Book.library.aliased("libraries"))
-                let request = Book.including(association)
+                let request = Book.including(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
@@ -363,10 +363,9 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         try dbQueue.inDatabase { db in
             do {
                 // alias first
-                let request = Book.including(
-                    Book.libraryAddress
-                        .aliased("a")
-                        .filter(Column("city") != "Paris"))
+                let request = Book.including(required: Book.libraryAddress
+                    .aliased("a")
+                    .filter(Column("city") != "Paris"))
                     .order(Column("city").from("a").desc)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
@@ -379,10 +378,9 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             
             do {
                 // alias last
-                let request = Book.including(
-                    Book.libraryAddress
-                        .order(Column("city").desc)
-                        .aliased("a"))
+                let request = Book.including(required: Book.libraryAddress
+                    .order(Column("city").desc)
+                    .aliased("a"))
                     .filter(Column("city").from("a") != "Paris")
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
@@ -396,7 +394,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             
             do {
                 // alias with table name (TODO: port this test to all testRightAlias() tests)
-                let request = Book.including(Book.libraryAddress.aliased("libraryAddresses"))
+                let request = Book.including(required: Book.libraryAddress.aliased("libraryAddresses"))
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
@@ -415,7 +413,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Book.including(Book.libraryAddress).aliased("LIBRARYADDRESSES")
+                let request = Book.including(required: Book.libraryAddress).aliased("LIBRARYADDRESSES")
                 try assertEqualSQL(db, request, """
                     SELECT "LIBRARYADDRESSES".*, "libraryAddresses1".* \
                     FROM "books" "LIBRARYADDRESSES" \
@@ -426,7 +424,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             
             do {
                 // alias right
-                let request = Book.including(Book.libraryAddress.aliased("BOOKS"))
+                let request = Book.including(required: Book.libraryAddress.aliased("BOOKS"))
                 try assertEqualSQL(db, request, """
                     SELECT "books1".*, "BOOKS".* \
                     FROM "books" "books1" \
@@ -443,7 +441,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Book.including(Book.libraryAddress.aliased("a")).aliased("A")
+                let request = Book.including(required: Book.libraryAddress.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

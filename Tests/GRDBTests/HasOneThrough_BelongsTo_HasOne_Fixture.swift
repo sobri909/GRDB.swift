@@ -27,8 +27,6 @@ struct HasOneThrough_BelongsTo_HasOne_Fixture {
         static let databaseTableName = "books"
         static let library = belongsTo(Library.self)
         static let libraryAddress = hasOne(Library.address, through: library)
-        static let optionalLibrary = belongsTo(optional: Library.self)
-        static let optionalLibraryAddress = hasOne(optional: Library.address, through: optionalLibrary)
         let isbn: String
         let title: String
         let libraryId: Int64?

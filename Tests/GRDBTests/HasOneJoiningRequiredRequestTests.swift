@@ -10,7 +10,7 @@ import XCTest
 private typealias Country = AssociationFixture.Country
 private typealias CountryProfile = AssociationFixture.CountryProfile
 
-class HasOneOptionalJoinedRequestTests: GRDBTestCase {
+class HasOneJoiningRequiredRequestTests: GRDBTestCase {
     
     func testSimplestRequest() throws {
         let dbQueue = try makeDatabaseQueue()
@@ -18,7 +18,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Country
-                .joined(with: Country.optionalProfile)
+                .joining(required: Country.profile)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -26,7 +26,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                 FROM "countries" \
                 LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code")
                 """)
-            
+
             assertMatch(graph, [
                 ["code": "FR", "name": "France"],
                 ["code": "US", "name": "United States"],
@@ -45,7 +45,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                 // filter before
                 let graph = try Country
                     .filter(Column("code") != "FR")
-                    .joined(with: Country.optionalProfile)
+                    .joining(required: Country.profile)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -54,7 +54,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                     LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
                     WHERE ("countries"."code" <> 'FR')
                     """)
-
+                
                 assertMatch(graph, [
                     ["code": "US", "name": "United States"],
                     ["code": "DE", "name": "Germany"],
@@ -65,7 +65,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Country
-                    .joined(with: Country.optionalProfile)
+                    .joining(required: Country.profile)
                     .filter(Column("code") != "FR")
                     .fetchAll(db)
                 
@@ -87,7 +87,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                 // order before
                 let graph = try Country
                     .order(Column("code"))
-                    .joined(with: Country.optionalProfile)
+                    .joining(required: Country.profile)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -108,7 +108,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
             do {
                 // order after
                 let graph = try Country
-                    .joined(with: Country.optionalProfile)
+                    .joining(required: Country.profile)
                     .order(Column("code"))
                     .fetchAll(db)
                 
@@ -136,7 +136,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let graph = try Country
-                    .joined(with: Country.optionalProfile.filter(Column("currency") == "EUR"))
+                    .joining(required: Country.profile.filter(Column("currency") == "EUR"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -144,7 +144,9 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                     FROM "countries" \
                     LEFT JOIN "countryProfiles" ON (("countryProfiles"."countryCode" = "countries"."code") AND ("countryProfiles"."currency" = 'EUR'))
                     """)
-                
+
+                // TODO: is it expected/well designed to have countries whose currency is not Euro here?
+                // TODO: how to get countries whose currency is Euro?
                 assertMatch(graph, [
                     ["code": "FR", "name": "France"],
                     ["code": "US", "name": "United States"],
@@ -155,7 +157,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
             
             do {
                 let graph = try Country
-                    .joined(with: Country.optionalProfile.order(Column("area")))
+                    .joining(required: Country.profile.order(Column("area")))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -190,7 +192,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Person.hasOne(Person.self)
-                let request = Person.joining(optional: association)
+                let request = Person.joining(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".* \
                     FROM "persons" "persons1" \
@@ -210,7 +212,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                 let request = Country.all()
                     .aliased("c")
                     .filter(Column("code") != "FR")
-                    .joined(with: Country.optionalProfile)
+                    .joining(required: Country.profile)
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "countries" "c" \
@@ -223,7 +225,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
                 // alias last
                 let request = Country
                     .filter(Column("code") != "FR")
-                    .joined(with: Country.optionalProfile)
+                    .joining(required: Country.profile)
                     .aliased("c")
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
@@ -242,8 +244,8 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias first
-                let request = Country.joined(with:
-                    Country.optionalProfile
+                let request = Country.joining(required:
+                    Country.profile
                         .aliased("a")
                         .filter(Column("currency") == "EUR"))
                     .order(Column("area").from("a"))
@@ -257,8 +259,8 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
             
             do {
                 // alias last
-                let request = Country.joined(with:
-                    Country.optionalProfile
+                let request = Country.joining(required:
+                    Country.profile
                         .order(Column("area"))
                         .aliased("a"))
                     .filter(Column("currency").from("a") == "EUR")
@@ -279,7 +281,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Country.joined(with: Country.optionalProfile).aliased("COUNTRYPROFILES")
+                let request = Country.joining(required: Country.profile).aliased("COUNTRYPROFILES")
                 try assertEqualSQL(db, request, """
                     SELECT "COUNTRYPROFILES".* \
                     FROM "countries" "COUNTRYPROFILES" \
@@ -289,7 +291,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
             
             do {
                 // alias right
-                let request = Country.joined(with: Country.optionalProfile.aliased("COUNTRIES"))
+                let request = Country.joining(required: Country.profile.aliased("COUNTRIES"))
                 try assertEqualSQL(db, request, """
                     SELECT "countries1".* \
                     FROM "countries" "countries1" \
@@ -305,7 +307,7 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Country.joined(with: Country.optionalProfile.aliased("a")).aliased("A")
+                let request = Country.joining(required: Country.profile.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

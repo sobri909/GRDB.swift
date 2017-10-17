@@ -19,7 +19,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         
         try dbQueue.inDatabase { db in
             let graph = try Country
-                .including(Country.optionalContinent)
+                .including(optional: Country.continent)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -48,7 +48,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
                 // filter before
                 let graph = try Country
                     .filter(Column("code") != "DE")
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -70,7 +70,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             do {
                 // filter after
                 let graph = try Country
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                     .filter(Column("code") != "DE")
                     .fetchAll(db)
                 
@@ -94,7 +94,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
                 // order before
                 let graph = try Country
                     .order(Column("name").desc)
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -117,7 +117,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             do {
                 // order after
                 let graph = try Country
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                     .order(Column("name").desc)
                     .fetchAll(db)
                 
@@ -147,9 +147,9 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         try dbQueue.inDatabase { db in
             do {
                 let middleAssociation = Country.profile.filter(Column("currency") != "EUR")
-                let association = Country.hasOne(optional: CountryProfile.optionalContinent, through: middleAssociation)
+                let association = Country.hasOne(CountryProfile.continent, through: middleAssociation)
                 let graph = try Country
-                    .including(association)
+                    .including(optional: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -170,9 +170,9 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             
             do {
                 let middleAssociation = Country.profile.order(Column("currency").desc)
-                let association = Country.hasOne(optional: CountryProfile.optionalContinent, through: middleAssociation)
+                let association = Country.hasOne(CountryProfile.continent, through: middleAssociation)
                 let graph = try Country
-                    .including(association)
+                    .including(optional: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -200,7 +200,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         try dbQueue.inDatabase { db in
             do {
                 let graph = try Country
-                    .including(Country.optionalContinent.filter(Column("name") != "America"))
+                    .including(optional: Country.continent.filter(Column("name") != "America"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -221,7 +221,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             
             do {
                 let graph = try Country
-                    .including(Country.optionalContinent.order(Column("name")))
+                    .including(optional: Country.continent.order(Column("name")))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -260,9 +260,9 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         try dbQueue.inDatabase { db in
             do {
                 let middleAssociation = Person.hasOne(Person.self, using: ForeignKey([Column("childId")]))
-                let rightAssociation = Person.belongsTo(optional: Person.self, using: ForeignKey([Column("parentId")]))
-                let association = Person.hasOne(optional: rightAssociation, through: middleAssociation)
-                let request = Person.including(association)
+                let rightAssociation = Person.belongsTo(Person.self, using: ForeignKey([Column("parentId")]))
+                let association = Person.hasOne(rightAssociation, through: middleAssociation)
+                let request = Person.including(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".*, "persons3".* \
                     FROM "persons" "persons1" \
@@ -283,7 +283,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
                 let request = Country.all()
                     .aliased("c")
                     .filter(Column("code") != "DE")
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                 try assertEqualSQL(db, request, """
                     SELECT "c".*, "continents".* \
                     FROM "countries" "c" \
@@ -297,7 +297,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
                 // alias last
                 let request = Country
                     .filter(Column("code") != "DE")
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                     .aliased("c")
                 try assertEqualSQL(db, request, """
                     SELECT "c".*, "continents".* \
@@ -312,7 +312,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
                 let request = Country.all()
                     .aliased("countries")
-                    .including(Country.optionalContinent)
+                    .including(optional: Country.continent)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "continents".* \
                     FROM "countries" \
@@ -329,8 +329,8 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Country.hasOne(optional: CountryProfile.optionalContinent, through: Country.profile.aliased("a"))
-                let request = Country.including(association)
+                let association = Country.hasOne(CountryProfile.continent, through: Country.profile.aliased("a"))
+                let request = Country.including(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "continents".* \
                     FROM "countries" \
@@ -340,8 +340,8 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             }
             do {
                 // alias with table name
-                let association = Country.hasOne(optional: CountryProfile.optionalContinent, through: Country.profile.aliased("countryProfiles"))
-                let request = Country.including(association)
+                let association = Country.hasOne(CountryProfile.continent, through: Country.profile.aliased("countryProfiles"))
+                let request = Country.including(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "continents".* \
                     FROM "countries" \
@@ -359,10 +359,9 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         try dbQueue.inDatabase { db in
             do {
                 // alias first
-                let request = Country.including(
-                    Country.optionalContinent
-                        .aliased("a")
-                        .filter(Column("name") != "America"))
+                let request = Country.including(optional: Country.continent
+                    .aliased("a")
+                    .filter(Column("name") != "America"))
                     .order(Column("name").from("a"))
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
@@ -375,10 +374,9 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             
             do {
                 // alias last
-                let request = Country.including(
-                    Country.optionalContinent
-                        .order(Column("name"))
-                        .aliased("a"))
+                let request = Country.including(optional: Country.continent
+                    .order(Column("name"))
+                    .aliased("a"))
                     .filter(Column("name").from("a") != "America")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
@@ -392,7 +390,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             
             do {
                 // alias with table name (TODO: port this test to all testRightAlias() tests)
-                let request = Country.including(Country.optionalContinent.aliased("continents"))
+                let request = Country.including(optional: Country.continent.aliased("continents"))
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "continents".* \
                     FROM "countries" \
@@ -411,7 +409,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Country.including(Country.optionalContinent).aliased("CONTINENTS")
+                let request = Country.including(optional: Country.continent).aliased("CONTINENTS")
                 try assertEqualSQL(db, request, """
                     SELECT "CONTINENTS".*, "continents1".* \
                     FROM "countries" "CONTINENTS" \
@@ -422,7 +420,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             
             do {
                 // alias right
-                let request = Country.including(Country.optionalContinent.aliased("COUNTRIES"))
+                let request = Country.including(optional: Country.continent.aliased("COUNTRIES"))
                 try assertEqualSQL(db, request, """
                     SELECT "countries1".*, "COUNTRIES".* \
                     FROM "countries" "countries1" \
@@ -439,7 +437,7 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Country.including(Country.optionalContinent.aliased("a")).aliased("A")
+                let request = Country.including(optional: Country.continent.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {
