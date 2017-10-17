@@ -1,4 +1,4 @@
-public struct BelongsToOptionalIncludingRequest<Left, Right> where
+public struct BelongsToIncludingOptionalRequest<Left, Right> where
     Left: TableMapping,
     Right: TableMapping
 {
@@ -8,19 +8,19 @@ public struct BelongsToOptionalIncludingRequest<Left, Right> where
     let association: BelongsToAssociation<Left, Right>
 }
 
-extension BelongsToOptionalIncludingRequest : RequestDerivableWrapper {
-    public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> BelongsToOptionalIncludingRequest {
-        return BelongsToOptionalIncludingRequest(
+extension BelongsToIncludingOptionalRequest : RequestDerivableWrapper {
+    public func mapRequest(_ transform: (WrappedRequest) -> (WrappedRequest)) -> BelongsToIncludingOptionalRequest {
+        return BelongsToIncludingOptionalRequest(
             leftRequest: transform(leftRequest),
             association: association)
     }
 }
 
-extension BelongsToOptionalIncludingRequest : TypedRequest {
+extension BelongsToIncludingOptionalRequest : TypedRequest {
     public typealias RowDecoder = JoinedPair<Left, Right?>
     
     public func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?) {
-        return try prepareJoinedPairRequest(
+        return try prepareIncludingRequest(
             db,
             left: leftRequest.query,
             join: .left,
@@ -32,16 +32,18 @@ extension BelongsToOptionalIncludingRequest : TypedRequest {
 }
 
 extension QueryInterfaceRequest where RowDecoder: TableMapping {
-    public func including<Right>(optional association: BelongsToAssociation<RowDecoder, Right>)
-        -> BelongsToOptionalIncludingRequest<RowDecoder, Right>
+    public func including<Right>(
+        optional association: BelongsToAssociation<RowDecoder, Right>)
+        -> BelongsToIncludingOptionalRequest<RowDecoder, Right>
     {
-        return BelongsToOptionalIncludingRequest(leftRequest: self, association: association)
+        return BelongsToIncludingOptionalRequest(leftRequest: self, association: association)
     }
 }
 
 extension TableMapping {
-    public static func including<Right>(optional association: BelongsToAssociation<Self, Right>)
-        -> BelongsToOptionalIncludingRequest<Self, Right>
+    public static func including<Right>(
+        optional association: BelongsToAssociation<Self, Right>)
+        -> BelongsToIncludingOptionalRequest<Self, Right>
     {
         return all().including(optional: association)
     }

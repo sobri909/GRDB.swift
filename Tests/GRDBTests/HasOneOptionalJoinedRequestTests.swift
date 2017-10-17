@@ -189,8 +189,8 @@ class HasOneOptionalJoinedRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Person.hasOne(optional: Person.self)
-                let request = Person.joined(with: association)
+                let association = Person.hasOne(Person.self)
+                let request = Person.joining(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".* \
                     FROM "persons" "persons1" \

@@ -23,7 +23,7 @@ extension HasManyThroughIncludingRequest : RequestDerivableWrapper {
 }
 
 extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, RightAssociation.RightAssociated : RowConvertible {
-    public func fetchAll(_ db: Database) throws -> [(left: Left.RowDecoder, right: [RightAssociation.RightAssociated])] {
+    public func fetchAll(_ db: Database) throws -> [(Left.RowDecoder, [RightAssociation.RightAssociated])] {
         let middleMapping = try association.middleAssociation.mapping(db)
         guard middleMapping.count == 1 else {
             fatalError("not implemented: support for compound foreign keys")
@@ -31,7 +31,7 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
         let leftKeyColumn = middleMapping[0].left
         let middleKeyColumn = middleMapping[0].right
         
-        var result: [(left: Left.RowDecoder, right: [RightAssociation.RightAssociated])] = []
+        var result: [(Left.RowDecoder, [RightAssociation.RightAssociated])] = []
         var resultIndexes : [DatabaseValue: [Int]] = [:]
         
         // SELECT * FROM left...
@@ -49,7 +49,7 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
                     if resultIndexes[key] == nil { resultIndexes[key] = [] }
                     resultIndexes[key]!.append(recordIndex)
                 }
-                result.append((left: left, right: []))
+                result.append((left, []))
             }
         }
         
@@ -106,7 +106,7 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
             for index in indexes {
                 // instanciate for each index, in order to never reuse references
                 let right = RightAssociation.RightAssociated(row: rightRow)
-                result[index].right.append(right)
+                result[index].1.append(right)
             }
         }
         
@@ -116,7 +116,8 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
 
 // TODO: Remove RequestDerivable condition once SE-0143 is implemented
 extension TypedRequest where Self: RequestDerivable, RowDecoder: TableMapping {
-    public func including<MiddleAssociation, RightAssociation>(_ association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
+    public func including<MiddleAssociation, RightAssociation>(
+        _ association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
         -> HasManyThroughIncludingRequest<Self, MiddleAssociation, RightAssociation>
         where MiddleAssociation.LeftAssociated == RowDecoder
     {
@@ -125,7 +126,8 @@ extension TypedRequest where Self: RequestDerivable, RowDecoder: TableMapping {
 }
 
 extension TableMapping {
-    public static func including<MiddleAssociation, RightAssociation>(_ association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
+    public static func including<MiddleAssociation, RightAssociation>(
+        _ association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>)
         -> HasManyThroughIncludingRequest<QueryInterfaceRequest<Self>, MiddleAssociation, RightAssociation>
         where MiddleAssociation.LeftAssociated == Self
     {
@@ -134,25 +136,28 @@ extension TableMapping {
 }
 
 extension HasManyThroughIncludingRequest where Left: QueryInterfaceRequestConvertible {
-    public func joined<Right2>(with association2: BelongsToAssociation<Left.RowDecoder, Right2>)
+    public func joined<Right2>(
+        with association2: BelongsToAssociation<Left.RowDecoder, Right2>)
         -> HasManyThroughIncludingRequest<BelongsToJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
     {
         // Use type inference when Swift is able to do it
         return HasManyThroughIncludingRequest<BelongsToJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
+            leftRequest: leftRequest.queryInterfaceRequest.joining(required: association2),
             association: association)
     }
     
-    public func joined<Right2>(with association2: HasOneAssociation<Left.RowDecoder, Right2>)
+    public func joined<Right2>(
+        with association2: HasOneAssociation<Left.RowDecoder, Right2>)
         -> HasManyThroughIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
     {
         // Use type inference when Swift is able to do it
         return HasManyThroughIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
+            leftRequest: leftRequest.queryInterfaceRequest.joining(required: association2),
             association: association)
     }
     
-    public func filter<Right2, Annotation2>(_ annotationPredicate: HasManyAnnotationPredicate<Left.RowDecoder, Right2, Annotation2>)
+    public func filter<Right2, Annotation2>(
+        _ annotationPredicate: HasManyAnnotationPredicate<Left.RowDecoder, Right2, Annotation2>)
         -> HasManyThroughIncludingRequest<HasManyAnnotationPredicateRequest<Left.RowDecoder, Right2, Annotation2>, MiddleAssociation, RightAssociation>
     {
         // Use type inference when Swift is able to do it
@@ -161,7 +166,8 @@ extension HasManyThroughIncludingRequest where Left: QueryInterfaceRequestConver
             association: association)
     }
     
-    public func filter<MiddleAssociation2, RightAssociation2, Annotation2>(_ annotationPredicate: HasManyThroughAnnotationPredicate<MiddleAssociation2, RightAssociation2, Annotation2>)
+    public func filter<MiddleAssociation2, RightAssociation2, Annotation2>(
+        _ annotationPredicate: HasManyThroughAnnotationPredicate<MiddleAssociation2, RightAssociation2, Annotation2>)
         -> HasManyThroughIncludingRequest<HasManyThroughAnnotationPredicateRequest<MiddleAssociation2, RightAssociation2, Annotation2>, MiddleAssociation, RightAssociation>
         where Left.RowDecoder == MiddleAssociation2.LeftAssociated
     {

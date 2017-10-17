@@ -10,7 +10,7 @@ import XCTest
 private typealias Book = HasOneThrough_BelongsTo_HasOne_Fixture.Book
 private typealias LibraryAddress = HasOneThrough_BelongsTo_HasOne_Fixture.LibraryAddress
 
-class HasOneOptionalThroughRequest_BelongsToOptional_HasOne_Tests: GRDBTestCase {
+class HasOneOptionalThroughRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
     
     func testRequest() throws {
         let dbQueue = try makeDatabaseQueue()

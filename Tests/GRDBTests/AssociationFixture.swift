@@ -12,7 +12,6 @@ struct AssociationFixture {
     struct Book : Codable, TableMapping, RowConvertible, MutablePersistable {
         static let databaseTableName = "books"
         static let author = belongsTo(Author.self)
-        static let optionalAuthor = belongsTo(optional: Author.self)
         let id: Int64?
         let authorId: Int64?
         let title: String
@@ -30,7 +29,6 @@ struct AssociationFixture {
     struct Country : Codable, TableMapping, RowConvertible, MutablePersistable {
         static let databaseTableName = "countries"
         static let profile = hasOne(CountryProfile.self)
-        static let optionalProfile = hasOne(optional: CountryProfile.self)
         let code: String
         let name: String
     }

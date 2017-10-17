@@ -11,7 +11,7 @@ private typealias Book = HasOneThrough_BelongsTo_HasOne_Fixture.Book
 private typealias Library = HasOneThrough_BelongsTo_HasOne_Fixture.Library
 private typealias LibraryAddress = HasOneThrough_BelongsTo_HasOne_Fixture.LibraryAddress
 
-class HasOneThroughIncludingRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
+class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
     
     func testSimplestRequest() throws {
         let dbQueue = try makeDatabaseQueue()

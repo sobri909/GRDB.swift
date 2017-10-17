@@ -10,7 +10,7 @@ import XCTest
 private typealias Author = AssociationFixture.Author
 private typealias Book = AssociationFixture.Book
 
-class BelongsToIncludingRequestTests: GRDBTestCase {
+class BelongsToIncludingOptionalRequestTests: GRDBTestCase {
     
     func testSimplestRequest() throws {
         let dbQueue = try makeDatabaseQueue()
@@ -18,13 +18,13 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Book
-                .including(Book.author)
+                .including(Book.optionalAuthor)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
                 SELECT "books".*, "authors".* \
                 FROM "books" \
-                JOIN "authors" ON ("authors"."id" = "books"."authorId")
+                LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId")
                 """)
             
             assertMatch(graph, [
@@ -36,6 +36,7 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                 (["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                 (["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                 (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
+                (["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017], nil),
                 ])
         }
     }
@@ -49,13 +50,13 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                 // filter before
                 let graph = try Book
                     .filter(Column("year") < 2000)
-                    .including(Book.author)
+                    .including(Book.optionalAuthor)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".*, "authors".* \
                     FROM "books" \
-                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     WHERE ("books"."year" < 2000)
                     """)
                 
@@ -71,14 +72,14 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Book
-                    .including(Book.author)
+                    .including(Book.optionalAuthor)
                     .filter(Column("year") < 2000)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".*, "authors".* \
                     FROM "books" \
-                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     WHERE ("books"."year" < 2000)
                     """)
                 
@@ -95,13 +96,13 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                 // order before
                 let graph = try Book
                     .order(Column("title"))
-                    .including(Book.author)
+                    .including(Book.optionalAuthor)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".*, "authors".* \
                     FROM "books" \
-                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     ORDER BY "books"."title"
                     """)
                 
@@ -114,20 +115,21 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                     (["id": 4, "authorId": 4, "title": "New York 2140", "year": 2017], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
+                    (["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017], nil),
                     ])
             }
             
             do {
                 // order after
                 let graph = try Book
-                    .including(Book.author)
+                    .including(Book.optionalAuthor)
                     .order(Column("title"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".*, "authors".* \
                     FROM "books" \
-                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     ORDER BY "books"."title"
                     """)
                 
@@ -140,6 +142,7 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                     (["id": 4, "authorId": 4, "title": "New York 2140", "year": 2017], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
+                    (["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017], nil),
                     ])
             }
         }
@@ -153,40 +156,43 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
             do {
                 // filtered authors
                 let graph = try Book
-                    .including(Book.author.filter(Column("birthYear") >= 1900))
+                    .including(Book.optionalAuthor.filter(Column("birthYear") >= 1900))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".*, "authors".* \
                     FROM "books" \
-                    JOIN "authors" ON (("authors"."id" = "books"."authorId") AND ("authors"."birthYear" >= 1900))
+                    LEFT JOIN "authors" ON (("authors"."id" = "books"."authorId") AND ("authors"."birthYear" >= 1900))
                     """)
                 
                 assertMatch(graph, [
                     (["id": 1, "authorId": 2, "title": "Foe", "year": 1986], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
                     (["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
+                    (["id": 3, "authorId": 3, "title": "Moby-Dick", "year": 1851], nil),
                     (["id": 4, "authorId": 4, "title": "New York 2140", "year": 2017], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 5, "authorId": 4, "title": "2312", "year": 2012], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
+                    (["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017], nil),
                     ])
             }
             
             do {
                 // ordered books
                 let graph = try Book
-                    .including(Book.author.order(Column("name")))
+                    .including(Book.optionalAuthor.order(Column("name")))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".*, "authors".* \
                     FROM "books" \
-                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     ORDER BY "authors"."name"
                     """)
                 
                 assertMatch(graph, [
+                    (["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017], nil),
                     (["id": 3, "authorId": 3, "title": "Moby-Dick", "year": 1851], ["id": 3, "name": "Herman Melville", "birthYear": 1819]),
                     (["id": 1, "authorId": 2, "title": "Foe", "year": 1986], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
                     (["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
@@ -197,34 +203,6 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                     (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
                     ])
             }
-        }
-    }
-    
-    func testLeftRightRequestDerivation() throws {
-        let dbQueue = try makeDatabaseQueue()
-        try AssociationFixture().migrator.migrate(dbQueue)
-        
-        try dbQueue.inDatabase { db in
-            let graph = try Book
-                .including(Book.author.filter(Column("birthYear") >= 1900).order(Column("name")))
-                .filter(Column("year") < 2000)
-                .order(Column("title"))
-                .fetchAll(db)
-            
-            assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".*, "authors".* \
-                    FROM "books" \
-                    JOIN "authors" ON (("authors"."id" = "books"."authorId") AND ("authors"."birthYear" >= 1900)) \
-                    WHERE ("books"."year" < 2000) \
-                    ORDER BY "books"."title", "authors"."name"
-                    """)
-            
-            assertMatch(graph, [
-                (["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
-                (["id": 1, "authorId": 2, "title": "Foe", "year": 1986], ["id": 2, "name": "J. M. Coetzee", "birthYear": 1940]),
-                (["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
-                (["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993], ["id": 4, "name": "Kim Stanley Robinson", "birthYear": 1952]),
-                ])
         }
     }
     
@@ -243,12 +221,12 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Person.belongsTo(Person.self)
+                let association = Person.belongsTo(optional: Person.self)
                 let request = Person.including(association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".*, "persons2".* \
                     FROM "persons" "persons1" \
-                    JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId")
+                    LEFT JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId")
                     """)
             }
         }
@@ -264,11 +242,11 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
                 let request = Book.all()
                     .aliased("b")
                     .filter(Column("year") < 2000)
-                    .including(Book.author)
+                    .including(Book.optionalAuthor)
                 try assertEqualSQL(db, request, """
                     SELECT "b".*, "authors".* \
                     FROM "books" "b" \
-                    JOIN "authors" ON ("authors"."id" = "b"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "b"."authorId") \
                     WHERE ("b"."year" < 2000)
                     """)
             }
@@ -276,13 +254,13 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
             do {
                 // alias last
                 let request = Book
-                    .including(Book.author)
+                    .including(Book.optionalAuthor)
                     .filter(Column("year") < 2000)
                     .aliased("b")
                 try assertEqualSQL(db, request, """
                     SELECT "b".*, "authors".* \
                     FROM "books" "b" \
-                    JOIN "authors" ON ("authors"."id" = "b"."authorId") \
+                    LEFT JOIN "authors" ON ("authors"."id" = "b"."authorId") \
                     WHERE ("b"."year" < 2000)
                     """)
             }
@@ -297,14 +275,14 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
             do {
                 // alias first
                 let request = Book
-                    .including(Book.author
+                    .including(Book.optionalAuthor
                         .aliased("a")
                         .order(Column("name")))
                     .filter(Column("birthYear").from("a") >= 1900)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
                     FROM "books" \
-                    JOIN "authors" "a" ON ("a"."id" = "books"."authorId") \
+                    LEFT JOIN "authors" "a" ON ("a"."id" = "books"."authorId") \
                     WHERE ("a"."birthYear" >= 1900) \
                     ORDER BY "a"."name"
                     """)
@@ -313,14 +291,14 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
             do {
                 // alias last
                 let request = Book
-                    .including(Book.author
+                    .including(Book.optionalAuthor
                         .filter(Column("birthYear") >= 1900)
                         .aliased("a"))
                     .order(Column("name").from("a"))
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
                     FROM "books" \
-                    JOIN "authors" "a" ON (("a"."id" = "books"."authorId") AND ("a"."birthYear" >= 1900)) \
+                    LEFT JOIN "authors" "a" ON (("a"."id" = "books"."authorId") AND ("a"."birthYear" >= 1900)) \
                     ORDER BY "a"."name"
                     """)
             }
@@ -334,21 +312,21 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Book.including(Book.author).aliased("AUTHORS")
+                let request = Book.including(Book.optionalAuthor).aliased("AUTHORS")
                 try assertEqualSQL(db, request, """
                     SELECT "AUTHORS".*, "authors1".* \
-                    FROM "books" "AUTHORS" JOIN "authors" "authors1" \
-                    ON ("authors1"."id" = "AUTHORS"."authorId")
+                    FROM "books" "AUTHORS" \
+                    LEFT JOIN "authors" "authors1" ON ("authors1"."id" = "AUTHORS"."authorId")
                     """)
             }
             
             do {
                 // alias right
-                let request = Book.including(Book.author.aliased("BOOKS"))
+                let request = Book.including(Book.optionalAuthor.aliased("BOOKS"))
                 try assertEqualSQL(db, request, """
                     SELECT "books1".*, "BOOKS".* \
                     FROM "books" "books1" \
-                    JOIN "authors" "BOOKS" ON ("BOOKS"."id" = "books1"."authorId")
+                    LEFT JOIN "authors" "BOOKS" ON ("BOOKS"."id" = "books1"."authorId")
                     """)
             }
         }
@@ -360,7 +338,7 @@ class BelongsToIncludingRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Book.including(Book.author.aliased("a")).aliased("A")
+                let request = Book.including(Book.optionalAuthor.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

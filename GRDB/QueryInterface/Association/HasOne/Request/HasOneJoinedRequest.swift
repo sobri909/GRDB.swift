@@ -33,13 +33,13 @@ extension HasOneJoinedRequest : TypedRequest {
 }
 
 extension QueryInterfaceRequest where RowDecoder: TableMapping {
-    public func joined<Right>(with association: HasOneAssociation<RowDecoder, Right>)
+    public func joining<Right>(required association: HasOneAssociation<RowDecoder, Right>)
         -> HasOneJoinedRequest<RowDecoder, Right>
     {
         return HasOneJoinedRequest(leftRequest: self, joinOp: .inner, association: association)
     }
     
-    public func joined<Right>(withOptional association: HasOneAssociation<RowDecoder, Right>)
+    public func joining<Right>(optional association: HasOneAssociation<RowDecoder, Right>)
         -> HasOneJoinedRequest<RowDecoder, Right>
     {
         return HasOneJoinedRequest(leftRequest: self, joinOp: .left, association: association)
@@ -47,15 +47,15 @@ extension QueryInterfaceRequest where RowDecoder: TableMapping {
 }
 
 extension TableMapping {
-    public static func joined<Right>(with association: HasOneAssociation<Self, Right>)
+    public static func joining<Right>(required association: HasOneAssociation<Self, Right>)
         -> HasOneJoinedRequest<Self, Right>
     {
-        return all().joined(with: association)
+        return all().joining(required: association)
     }
     
-    public static func joined<Right>(withOptional association: HasOneAssociation<Self, Right>)
+    public static func joining<Right>(optional association: HasOneAssociation<Self, Right>)
         -> HasOneJoinedRequest<Self, Right>
     {
-        return all().joined(withOptional: association)
+        return all().joining(optional: association)
     }
 }

@@ -11,7 +11,7 @@ private typealias Book = HasOneThrough_BelongsTo_HasOne_Fixture.Book
 private typealias Library = HasOneThrough_BelongsTo_HasOne_Fixture.Library
 private typealias LibraryAddress = HasOneThrough_BelongsTo_HasOne_Fixture.LibraryAddress
 
-class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTestCase {
+class HasOneThroughIncludingOptionalRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
     
     func testSimplestRequest() throws {
         let dbQueue = try makeDatabaseQueue()
@@ -19,25 +19,25 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         
         try dbQueue.inDatabase { db in
             let graph = try Book
-                .joined(with: Book.optionalLibraryAddress)
+                .including(optional: Book.libraryAddress)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
-                SELECT "books".* \
+                SELECT "books".*, "libraryAddresses".* \
                 FROM "books" \
                 LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                 LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                 """)
 
             assertMatch(graph, [
-                ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                (["isbn": "book3", "title": "Walden", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                 ])
         }
     }
@@ -51,37 +51,37 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                 // filter before
                 let graph = try Book
                     .filter(Column("title") != "Walden")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     WHERE ("books"."title" <> 'Walden')
                     """)
-
+                
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                     ])
             }
             
             do {
                 // filter after
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                     .filter(Column("title") != "Walden")
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
@@ -89,13 +89,13 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                     ])
             }
             
@@ -103,38 +103,38 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                 // order before
                 let graph = try Book
                     .order(Column("title").desc)
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     ORDER BY "books"."title" DESC
                     """)
-
+                
                 assertMatch(graph, [
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
+                    (["isbn": "book3", "title": "Walden", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
                     ])
             }
             
             do {
                 // order after
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                     .order(Column("title").desc)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
@@ -142,14 +142,14 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
+                    (["isbn": "book3", "title": "Walden", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
                     ])
             }
         }
@@ -161,54 +161,54 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         
         try dbQueue.inDatabase { db in
             do {
-                let middleAssociation = Book.optionalLibrary.filter(Column("name") != "Secret Library")
-                let association = Book.hasOne(optional: Library.address, through: middleAssociation)
+                let middleAssociation = Book.library.filter(Column("name") != "Secret Library")
+                let association = Book.hasOne(library.address, through: middleAssociation)
                 let graph = try Book
-                    .joined(with: association)
+                    .including(optional: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON (("libraries"."id" = "books"."libraryId") AND ("libraries"."name" <> 'Secret Library')) \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
-
+                
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book3", "title": "Walden", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], nil),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], nil),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                     ])
             }
             
             do {
-                let middleAssociation = Book.optionalLibrary.order(Column("name").desc)
-                let association = Book.hasOne(optional: Library.address, through: middleAssociation)
+                let middleAssociation = Book.library.order(Column("name").desc)
+                let association = Book.hasOne(library.address, through: middleAssociation)
                 let graph = try Book
-                    .joined(with: association)
+                    .including(optional: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book3", "title": "Walden", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                     ])
             }
         }
@@ -221,49 +221,50 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         try dbQueue.inDatabase { db in
             do {
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress.filter(Column("city") != "Paris"))
+                    .including(optional: Book.libraryAddress.filter(Column("city") != "Paris"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON (("libraryAddresses"."libraryId" = "libraries"."id") AND ("libraryAddresses"."city" <> 'Paris'))
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], nil),
+                    (["isbn": "book3", "title": "Walden", "libraryId": 1], nil),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], nil),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                     ])
             }
             
             do {
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress.order(Column("city").desc))
+                    .including(optional: Book.libraryAddress.order(Column("city").desc))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    ORDER BY "libraryAddresses"."city" DESC
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
-                    ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
+                    (["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book3", "title": "Walden", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1], ["city": "Paris", "libraryId": 1]),
+                    (["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2], ["city": "London", "libraryId": 2]),
+                    (["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3], ["city": "Barcelona", "libraryId": 3]),
+                    (["isbn": "book1", "title": "Moby-Dick", "libraryId": nil], nil),
+                    (["isbn": "book8", "title": "Necronomicon", "libraryId": 4], nil),
                     ])
             }
         }
@@ -285,12 +286,12 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         
         try dbQueue.inDatabase { db in
             do {
-                let middleAssociation = Person.belongsTo(optional: Person.self, using: ForeignKey([Column("parentId")]))
+                let middleAssociation = Person.belongsTo(Person.self, using: ForeignKey([Column("parentId")]))
                 let rightAssociation = Person.hasOne(Person.self, using: ForeignKey([Column("childId")]))
-                let association = Person.hasOne(optional: rightAssociation, through: middleAssociation)
-                let request = Person.joined(with: association)
+                let association = Person.hasOne(rightAssociation, through: middleAssociation)
+                let request = Person.including(optional: association)
                 try assertEqualSQL(db, request, """
-                    SELECT "persons1".* \
+                    SELECT "persons1".*, "persons3".* \
                     FROM "persons" "persons1" \
                     LEFT JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId") \
                     LEFT JOIN "persons" "persons3" ON ("persons3"."childId" = "persons2"."id")
@@ -309,9 +310,9 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                 let request = Book.all()
                     .aliased("c")
                     .filter(Column("title") != "Walden")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
-                    SELECT "c".* \
+                    SELECT "c".*, "libraryAddresses".* \
                     FROM "books" "c" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "c"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
@@ -323,10 +324,10 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                 // alias last
                 let request = Book
                     .filter(Column("title") != "Walden")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                     .aliased("c")
                 try assertEqualSQL(db, request, """
-                    SELECT "c".* \
+                    SELECT "c".*, "libraryAddresses".* \
                     FROM "books" "c" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "c"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
@@ -338,9 +339,9 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
                 let request = Book.all()
                     .aliased("books")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .including(optional: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
@@ -355,10 +356,10 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Book.hasOne(optional: Library.address, through: Book.optionalLibrary.aliased("a"))
-                let request = Book.joined(with: association)
+                let association = Book.hasOne(Library.address, through: Book.library.aliased("a"))
+                let request = Book.including(optional: association)
                 try assertEqualSQL(db, request, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" "a" ON ("a"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "a"."id")
@@ -366,10 +367,10 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
             }
             do {
                 // alias with table name
-                let association = Book.hasOne(optional: Library.address, through: Book.optionalLibrary.aliased("libraries"))
-                let request = Book.joined(with: association)
+                let association = Book.hasOne(Library.address, through: Book.library.aliased("libraries"))
+                let request = Book.including(optional: association)
                 try assertEqualSQL(db, request, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
@@ -385,13 +386,12 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         try dbQueue.inDatabase { db in
             do {
                 // alias first
-                let request = Book.joined(with:
-                    Book.optionalLibraryAddress
-                        .aliased("a")
-                        .filter(Column("city") != "Paris"))
+                let request = Book.including(optional: Book.libraryAddress
+                    .aliased("a")
+                    .filter(Column("city") != "Paris"))
                     .order(Column("city").from("a").desc)
                 try assertEqualSQL(db, request, """
-                    SELECT "books".* \
+                    SELECT "books".*, "a".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" "a" ON (("a"."libraryId" = "libraries"."id") AND ("a"."city" <> 'Paris')) \
@@ -401,25 +401,25 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
             
             do {
                 // alias last
-                let request = Book.joined(with:
-                    Book.optionalLibraryAddress
-                        .order(Column("city").desc)
-                        .aliased("a"))
+                let request = Book.including(optional: Book.libraryAddress
+                    .order(Column("city").desc)
+                    .aliased("a"))
                     .filter(Column("city").from("a") != "Paris")
                 try assertEqualSQL(db, request, """
-                    SELECT "books".* \
+                    SELECT "books".*, "a".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" "a" ON ("a"."libraryId" = "libraries"."id") \
-                    WHERE ("a"."city" <> 'Paris')
+                    WHERE ("a"."city" <> 'Paris') \
+                    ORDER BY "a"."city" DESC
                     """)
             }
             
             do {
                 // alias with table name (TODO: port this test to all testRightAlias() tests)
-                let request = Book.joined(with: Book.optionalLibraryAddress.aliased("libraryAddresses"))
+                let request = Book.including(optional: Book.libraryAddress.aliased("libraryAddresses"))
                 try assertEqualSQL(db, request, """
-                    SELECT "books".* \
+                    SELECT "books".*, "libraryAddresses".* \
                     FROM "books" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
                     LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
@@ -436,9 +436,9 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Book.joined(with: Book.optionalLibraryAddress).aliased("LIBRARYADDRESSES")
+                let request = Book.including(optional: Book.libraryAddress).aliased("LIBRARYADDRESSES")
                 try assertEqualSQL(db, request, """
-                    SELECT "LIBRARYADDRESSES".* \
+                    SELECT "LIBRARYADDRESSES".*, "libraryAddresses1".* \
                     FROM "books" "LIBRARYADDRESSES" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "LIBRARYADDRESSES"."libraryId") \
                     LEFT JOIN "libraryAddresses" "libraryAddresses1" ON ("libraryAddresses1"."libraryId" = "libraries"."id")
@@ -447,12 +447,12 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
             
             do {
                 // alias right
-                let request = Book.joined(with: Book.optionalLibraryAddress.aliased("BOOKS"))
+                let request = Book.including(optional: Book.libraryAddress.aliased("BOOKS"))
                 try assertEqualSQL(db, request, """
-                    SELECT "books1".* \
+                    SELECT "books1".*, "BOOKS".* \
                     FROM "books" "books1" \
                     LEFT JOIN "libraries" ON ("libraries"."id" = "books1"."libraryId") \
-                    LEFT JOIN "libraryAddresses" "BOOKS" ON ("BOOKS\"."libraryId" = "libraries"."id")
+                    LEFT JOIN "libraryAddresses" "BOOKS" ON ("BOOKS"."libraryId" = "libraries"."id")
                     """)
             }
         }
@@ -464,7 +464,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsToOptional_HasOne_Tests: GRDBTes
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Book.joined(with: Book.optionalLibraryAddress.aliased("a")).aliased("A")
+                let request = Book.including(optional: Book.libraryAddress.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

@@ -20,7 +20,7 @@ extension HasManyIncludingRequest : RequestDerivableWrapper {
 }
 
 extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: RowConvertible {
-    public func fetchAll(_ db: Database) throws -> [(left: Left.RowDecoder, right: [Right])] {
+    public func fetchAll(_ db: Database) throws -> [(Left.RowDecoder, [Right])] {
         let mapping = try association.mapping(db)
         guard mapping.count == 1 else {
             fatalError("not implemented: support for compound foreign keys")
@@ -28,7 +28,7 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
         let leftKeyColumn = mapping[0].left
         let rightKeyColumn = mapping[0].right
         
-        var result: [(left: Left.RowDecoder, right: [Right])] = []
+        var result: [(Left.RowDecoder, [Right])] = []
         var resultIndexes : [DatabaseValue: Int] = [:]
         
         // SELECT * FROM left...
@@ -43,7 +43,7 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
                 let left = Left.RowDecoder(row: row)
                 let key: DatabaseValue = row[keyIndex]
                 resultIndexes[key] = recordIndex
-                result.append((left: left, right: []))
+                result.append((left, []))
             }
         }
         
@@ -68,7 +68,7 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
                 let right = Right(row: row)
                 let key: DatabaseValue = row[keyIndex]
                 let index = resultIndexes[key]! // index has been recorded during leftRequest iteration
-                result[index].right.append(right)
+                result[index].1.append(right)
             }
         }
         
@@ -78,7 +78,8 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
 
 // TODO: Remove RequestDerivable condition once SE-0143 is implemented
 extension TypedRequest where Self: RequestDerivable, RowDecoder: TableMapping {
-    public func including<Right>(_ association: HasManyAssociation<RowDecoder, Right>)
+    public func including<Right>(
+        _ association: HasManyAssociation<RowDecoder, Right>)
         -> HasManyIncludingRequest<Self, Right>
     {
         return HasManyIncludingRequest(leftRequest: self, association: association)
@@ -86,7 +87,8 @@ extension TypedRequest where Self: RequestDerivable, RowDecoder: TableMapping {
 }
 
 extension TableMapping {
-    public static func including<Right>(_ association: HasManyAssociation<Self, Right>)
+    public static func including<Right>(
+        _ association: HasManyAssociation<Self, Right>)
         -> HasManyIncludingRequest<QueryInterfaceRequest<Self>, Right>
     {
         return all().including(association)
@@ -94,25 +96,28 @@ extension TableMapping {
 }
 
 extension HasManyIncludingRequest where Left: QueryInterfaceRequestConvertible {
-    public func joined<Right2>(with association2: BelongsToAssociation<Left.RowDecoder, Right2>)
+    public func joined<Right2>(
+        with association2: BelongsToAssociation<Left.RowDecoder, Right2>)
         -> HasManyIncludingRequest<BelongsToJoinedRequest<Left.RowDecoder, Right2>, Right>
     {
         // TODO: Use type inference when Swift is able to do it
         return HasManyIncludingRequest<BelongsToJoinedRequest<Left.RowDecoder, Right2>, Right>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
+            leftRequest: leftRequest.queryInterfaceRequest.joining(required: association2),
             association: association)
     }
 
-    public func joined<Right2>(with association2: HasOneAssociation<Left.RowDecoder, Right2>)
+    public func joined<Right2>(
+        with association2: HasOneAssociation<Left.RowDecoder, Right2>)
         -> HasManyIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, Right>
     {
         // TODO: Use type inference when Swift is able to do it
         return HasManyIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, Right>(
-            leftRequest: leftRequest.queryInterfaceRequest.joined(with: association2),
+            leftRequest: leftRequest.queryInterfaceRequest.joining(required: association2),
             association: association)
     }
     
-    public func filter<Right2, Annotation2>(_ annotationPredicate: HasManyAnnotationPredicate<Left.RowDecoder, Right2, Annotation2>)
+    public func filter<Right2, Annotation2>(
+        _ annotationPredicate: HasManyAnnotationPredicate<Left.RowDecoder, Right2, Annotation2>)
         -> HasManyIncludingRequest<HasManyAnnotationPredicateRequest<Left.RowDecoder, Right2, Annotation2>, Right>
     {
         // TODO: Use type inference when Swift is able to do it
@@ -121,7 +126,8 @@ extension HasManyIncludingRequest where Left: QueryInterfaceRequestConvertible {
             association: association)
     }
     
-    public func filter<MiddleAssociation2, RightAssociation2, Annotation2>(_ annotationPredicate: HasManyThroughAnnotationPredicate<MiddleAssociation2, RightAssociation2, Annotation2>)
+    public func filter<MiddleAssociation2, RightAssociation2, Annotation2>(
+        _ annotationPredicate: HasManyThroughAnnotationPredicate<MiddleAssociation2, RightAssociation2, Annotation2>)
         -> HasManyIncludingRequest<HasManyThroughAnnotationPredicateRequest<MiddleAssociation2, RightAssociation2, Annotation2>, Right>
         where MiddleAssociation2.LeftAssociated == Left.RowDecoder
     {

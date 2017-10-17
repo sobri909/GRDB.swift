@@ -22,7 +22,7 @@ extension HasManyJoinedRequest : TypedRequest {
     public typealias RowDecoder = JoinedPair<Left, Right>
     
     public func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?) {
-        return try prepareJoinedPairRequest(
+        return try prepareIncludingRequest(
             db,
             left: leftRequest.query,
             join: joinOp,

@@ -10,7 +10,7 @@ import XCTest
 private typealias Country = AssociationFixture.Country
 private typealias CountryProfile = AssociationFixture.CountryProfile
 
-class HasOneOptionalIncludingRequestTests: GRDBTestCase {
+class HasOneIncludingOptionalRequestTests: GRDBTestCase {
     
     func testSimplestRequest() throws {
         let dbQueue = try makeDatabaseQueue()
@@ -190,8 +190,8 @@ class HasOneOptionalIncludingRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Person.hasOne(optional: Person.self)
-                let request = Person.including(association)
+                let association = Person.hasOne(Person.self)
+                let request = Person.including(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".*, "persons2".* \
                     FROM "persons" "persons1" \
