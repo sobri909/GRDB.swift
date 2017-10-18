@@ -7,7 +7,7 @@ import XCTest
     import GRDB
 #endif
 
-class HasOneOptionalAssociationTests: GRDBTestCase {
+class HasOneForeignKeyRequiredTests: GRDBTestCase {
     
     func testSingleColumnNoForeignKeyNoPrimaryKey() throws {
         struct Child : TableMapping {
@@ -35,19 +35,19 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."rowid")
+                    JOIN "children" ON ("children"."parentId" = "parents"."rowid")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 2)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")], to: [Column("id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."id")
+                    JOIN "children" ON ("children"."parentId" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
@@ -79,19 +79,19 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."id")
+                    JOIN "children" ON ("children"."parentId" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")], to: [Column("id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."id")
+                    JOIN "children" ON ("children"."parentId" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
@@ -123,28 +123,28 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self)
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."id")
+                    JOIN "children" ON ("children"."parentId" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."id")
+                    JOIN "children" ON ("children"."parentId" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentId")], to: [Column("id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parentId" = "parents"."id")
+                    JOIN "children" ON ("children"."parentId" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parentId\" = 1)")
             }
@@ -177,37 +177,37 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1Id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parent1Id" = "parents"."id")
+                    JOIN "children" ON ("children"."parent1Id" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent1Id\" = 1)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1Id")], to: [Column("id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parent1Id" = "parents"."id")
+                    JOIN "children" ON ("children"."parent1Id" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent1Id\" = 1)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2Id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parent2Id" = "parents"."id")
+                    JOIN "children" ON ("children"."parent2Id" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent2Id\" = 1)")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2Id")], to: [Column("id")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON ("children"."parent2Id" = "parents"."id")
+                    JOIN "children" ON ("children"."parent2Id" = "parents"."id")
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE (\"parent2Id\" = 1)")
             }
@@ -242,10 +242,10 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
+                    JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
@@ -281,19 +281,19 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
+                    JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
+                    JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
@@ -330,28 +330,28 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self)
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
+                    JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
+                    JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parentA"), Column("parentB")], to: [Column("a"), Column("b")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
+                    JOIN "children" ON (("children"."parentA" = "parents"."a") AND ("children"."parentB" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parentA\" = 1) AND (\"parentB\" = 2))")
             }
@@ -391,37 +391,37 @@ class HasOneOptionalAssociationTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1A"), Column("parent1B")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parent1A" = "parents"."a") AND ("children"."parent1B" = "parents"."b"))
+                    JOIN "children" ON (("children"."parent1A" = "parents"."a") AND ("children"."parent1B" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent1A\" = 1) AND (\"parent1B\" = 2))")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent1A"), Column("parent1B")], to: [Column("a"), Column("b")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parent1A" = "parents"."a") AND ("children"."parent1B" = "parents"."b"))
+                    JOIN "children" ON (("children"."parent1A" = "parents"."a") AND ("children"."parent1B" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent1A\" = 1) AND (\"parent1B\" = 2))")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2A"), Column("parent2B")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parent2A" = "parents"."a") AND ("children"."parent2B" = "parents"."b"))
+                    JOIN "children" ON (("children"."parent2A" = "parents"."a") AND ("children"."parent2B" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent2A\" = 1) AND (\"parent2B\" = 2))")
             }
             do {
                 let association = Parent.hasOne(Child.self, using: ForeignKey([Column("parent2A"), Column("parent2B")], to: [Column("a"), Column("b")]))
-                try assertEqualSQL(db, Parent.all().including(optional: association), """
+                try assertEqualSQL(db, Parent.all().including(required: association), """
                     SELECT "parents".*, "children".* \
                     FROM "parents" \
-                    LEFT JOIN "children" ON (("children"."parent2A" = "parents"."a") AND ("children"."parent2B" = "parents"."b"))
+                    JOIN "children" ON (("children"."parent2A" = "parents"."a") AND ("children"."parent2B" = "parents"."b"))
                     """)
                 try assertEqualSQL(db, Parent().request(association), "SELECT * FROM \"children\" WHERE ((\"parent2A\" = 1) AND (\"parent2B\" = 2))")
             }

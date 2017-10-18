@@ -11,7 +11,7 @@ private typealias Book = HasOneThrough_BelongsTo_HasOne_Fixture.Book
 private typealias Library = HasOneThrough_BelongsTo_HasOne_Fixture.Library
 private typealias LibraryAddress = HasOneThrough_BelongsTo_HasOne_Fixture.LibraryAddress
 
-class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
+class HasOneThroughJoinedOptionalRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
     
     func testSimplestRequest() throws {
         let dbQueue = try makeDatabaseQueue()
@@ -19,7 +19,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Book
-                .joined(with: Book.optionalLibraryAddress)
+                .joining(optional: Book.libraryAddress)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -51,7 +51,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 // filter before
                 let graph = try Book
                     .filter(Column("title") != "Walden")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -76,7 +76,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                     .filter(Column("title") != "Walden")
                     .fetchAll(db)
                 
@@ -103,7 +103,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 // order before
                 let graph = try Book
                     .order(Column("title").desc)
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -129,7 +129,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // order after
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                     .order(Column("title").desc)
                     .fetchAll(db)
                 
@@ -161,10 +161,10 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let middleAssociation = Book.optionalLibrary.filter(Column("name") != "Secret Library")
-                let association = Book.hasOne(optional: Library.address, through: middleAssociation)
+                let middleAssociation = Book.library.filter(Column("name") != "Secret Library")
+                let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
-                    .joined(with: association)
+                    .joining(optional: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -187,10 +187,10 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             }
             
             do {
-                let middleAssociation = Book.optionalLibrary.order(Column("name").desc)
-                let association = Book.hasOne(optional: Library.address, through: middleAssociation)
+                let middleAssociation = Book.library.order(Column("name").desc)
+                let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
-                    .joined(with: association)
+                    .joining(optional: association)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -221,7 +221,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress.filter(Column("city") != "Paris"))
+                    .joining(optional: Book.libraryAddress.filter(Column("city") != "Paris"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -245,7 +245,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             
             do {
                 let graph = try Book
-                    .joined(with: Book.optionalLibraryAddress.order(Column("city").desc))
+                    .joining(optional: Book.libraryAddress.order(Column("city").desc))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -285,10 +285,10 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let middleAssociation = Person.belongsTo(optional: Person.self, using: ForeignKey([Column("parentId")]))
+                let middleAssociation = Person.belongsTo(Person.self, using: ForeignKey([Column("parentId")]))
                 let rightAssociation = Person.hasOne(Person.self, using: ForeignKey([Column("childId")]))
-                let association = Person.hasOne(optional: rightAssociation, through: middleAssociation)
-                let request = Person.joined(with: association)
+                let association = Person.hasOne(rightAssociation, through: middleAssociation)
+                let request = Person.joining(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".* \
                     FROM "persons" "persons1" \
@@ -309,7 +309,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 let request = Book.all()
                     .aliased("c")
                     .filter(Column("title") != "Walden")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "books" "c" \
@@ -323,7 +323,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 // alias last
                 let request = Book
                     .filter(Column("title") != "Walden")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                     .aliased("c")
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
@@ -338,7 +338,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
                 let request = Book.all()
                     .aliased("books")
-                    .joined(with: Book.optionalLibraryAddress)
+                    .joining(optional: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
@@ -355,8 +355,8 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let association = Book.hasOne(optional: Library.address, through: Book.optionalLibrary.aliased("a"))
-                let request = Book.joined(with: association)
+                let association = Book.hasOne(Library.address, through: Book.library.aliased("a"))
+                let request = Book.joining(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
@@ -366,8 +366,8 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             }
             do {
                 // alias with table name
-                let association = Book.hasOne(optional: Library.address, through: Book.optionalLibrary.aliased("libraries"))
-                let request = Book.joined(with: association)
+                let association = Book.hasOne(Library.address, through: Book.library.aliased("libraries"))
+                let request = Book.joining(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
@@ -385,10 +385,9 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias first
-                let request = Book.joined(with:
-                    Book.optionalLibraryAddress
-                        .aliased("a")
-                        .filter(Column("city") != "Paris"))
+                let request = Book.joining(optional: Book.libraryAddress
+                    .aliased("a")
+                    .filter(Column("city") != "Paris"))
                     .order(Column("city").from("a").desc)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -401,10 +400,9 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             
             do {
                 // alias last
-                let request = Book.joined(with:
-                    Book.optionalLibraryAddress
-                        .order(Column("city").desc)
-                        .aliased("a"))
+                let request = Book.joining(optional: Book.libraryAddress
+                    .order(Column("city").desc)
+                    .aliased("a"))
                     .filter(Column("city").from("a") != "Paris")
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -417,7 +415,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             
             do {
                 // alias with table name (TODO: port this test to all testRightAlias() tests)
-                let request = Book.joined(with: Book.optionalLibraryAddress.aliased("libraryAddresses"))
+                let request = Book.joining(optional: Book.libraryAddress.aliased("libraryAddresses"))
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
@@ -436,7 +434,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Book.joined(with: Book.optionalLibraryAddress).aliased("LIBRARYADDRESSES")
+                let request = Book.joining(optional: Book.libraryAddress).aliased("LIBRARYADDRESSES")
                 try assertEqualSQL(db, request, """
                     SELECT "LIBRARYADDRESSES".* \
                     FROM "books" "LIBRARYADDRESSES" \
@@ -447,7 +445,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             
             do {
                 // alias right
-                let request = Book.joined(with: Book.optionalLibraryAddress.aliased("BOOKS"))
+                let request = Book.joining(optional: Book.libraryAddress.aliased("BOOKS"))
                 try assertEqualSQL(db, request, """
                     SELECT "books1".* \
                     FROM "books" "books1" \
@@ -464,7 +462,7 @@ class HasOneOptionalThroughJoinedRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Book.joined(with: Book.optionalLibraryAddress.aliased("a")).aliased("A")
+                let request = Book.joining(optional: Book.libraryAddress.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

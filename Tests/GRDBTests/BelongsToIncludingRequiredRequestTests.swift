@@ -18,7 +18,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Book
-                .including(Book.author)
+                .including(required: Book.author)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -49,7 +49,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
                 // filter before
                 let graph = try Book
                     .filter(Column("year") < 2000)
-                    .including(Book.author)
+                    .including(required: Book.author)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -71,7 +71,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Book
-                    .including(Book.author)
+                    .including(required: Book.author)
                     .filter(Column("year") < 2000)
                     .fetchAll(db)
                 
@@ -95,7 +95,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
                 // order before
                 let graph = try Book
                     .order(Column("title"))
-                    .including(Book.author)
+                    .including(required: Book.author)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -120,7 +120,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // order after
                 let graph = try Book
-                    .including(Book.author)
+                    .including(required: Book.author)
                     .order(Column("title"))
                     .fetchAll(db)
                 
@@ -153,7 +153,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // filtered authors
                 let graph = try Book
-                    .including(Book.author.filter(Column("birthYear") >= 1900))
+                    .including(required: Book.author.filter(Column("birthYear") >= 1900))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -176,7 +176,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // ordered books
                 let graph = try Book
-                    .including(Book.author.order(Column("name")))
+                    .including(required: Book.author.order(Column("name")))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -206,7 +206,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Book
-                .including(Book.author.filter(Column("birthYear") >= 1900).order(Column("name")))
+                .including(required: Book.author.filter(Column("birthYear") >= 1900).order(Column("name")))
                 .filter(Column("year") < 2000)
                 .order(Column("title"))
                 .fetchAll(db)
@@ -244,7 +244,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Person.belongsTo(Person.self)
-                let request = Person.including(association)
+                let request = Person.including(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".*, "persons2".* \
                     FROM "persons" "persons1" \
@@ -264,7 +264,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
                 let request = Book.all()
                     .aliased("b")
                     .filter(Column("year") < 2000)
-                    .including(Book.author)
+                    .including(required: Book.author)
                 try assertEqualSQL(db, request, """
                     SELECT "b".*, "authors".* \
                     FROM "books" "b" \
@@ -276,7 +276,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // alias last
                 let request = Book
-                    .including(Book.author)
+                    .including(required: Book.author)
                     .filter(Column("year") < 2000)
                     .aliased("b")
                 try assertEqualSQL(db, request, """
@@ -297,7 +297,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // alias first
                 let request = Book
-                    .including(Book.author
+                    .including(required: Book.author
                         .aliased("a")
                         .order(Column("name")))
                     .filter(Column("birthYear").from("a") >= 1900)
@@ -313,7 +313,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // alias last
                 let request = Book
-                    .including(Book.author
+                    .including(required: Book.author
                         .filter(Column("birthYear") >= 1900)
                         .aliased("a"))
                     .order(Column("name").from("a"))
@@ -334,7 +334,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Book.including(Book.author).aliased("AUTHORS")
+                let request = Book.including(required: Book.author).aliased("AUTHORS")
                 try assertEqualSQL(db, request, """
                     SELECT "AUTHORS".*, "authors1".* \
                     FROM "books" "AUTHORS" JOIN "authors" "authors1" \
@@ -344,7 +344,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             
             do {
                 // alias right
-                let request = Book.including(Book.author.aliased("BOOKS"))
+                let request = Book.including(required: Book.author.aliased("BOOKS"))
                 try assertEqualSQL(db, request, """
                     SELECT "books1".*, "BOOKS".* \
                     FROM "books" "books1" \
@@ -360,7 +360,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Book.including(Book.author.aliased("a")).aliased("A")
+                let request = Book.including(required: Book.author.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

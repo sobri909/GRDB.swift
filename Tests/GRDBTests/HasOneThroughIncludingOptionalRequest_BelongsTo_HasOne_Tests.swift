@@ -162,7 +162,7 @@ class HasOneThroughIncludingOptionalRequest_BelongsTo_HasOne_Tests: GRDBTestCase
         try dbQueue.inDatabase { db in
             do {
                 let middleAssociation = Book.library.filter(Column("name") != "Secret Library")
-                let association = Book.hasOne(library.address, through: middleAssociation)
+                let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
                     .including(optional: association)
                     .fetchAll(db)
@@ -188,7 +188,7 @@ class HasOneThroughIncludingOptionalRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             
             do {
                 let middleAssociation = Book.library.order(Column("name").desc)
-                let association = Book.hasOne(library.address, through: middleAssociation)
+                let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
                     .including(optional: association)
                     .fetchAll(db)

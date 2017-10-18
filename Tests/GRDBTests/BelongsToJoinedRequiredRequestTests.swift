@@ -24,7 +24,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
             assertEqualSQL(lastSQLQuery, """
                 SELECT "books".* \
                 FROM "books" \
-                LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId")
+                JOIN "authors" ON ("authors"."id" = "books"."authorId")
                 """)
             
             assertMatch(graph, [
@@ -36,7 +36,6 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 ["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996],
                 ["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994],
                 ["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993],
-                ["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017],
                 ])
         }
     }
@@ -56,7 +55,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     WHERE ("books"."year" < 2000)
                     """)
 
@@ -79,7 +78,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     WHERE ("books"."year" < 2000)
                     """)
                 
@@ -102,7 +101,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     ORDER BY "books"."title"
                     """)
 
@@ -115,7 +114,6 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                     ["id": 4, "authorId": 4, "title": "New York 2140", "year": 2017],
                     ["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993],
                     ["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014],
-                    ["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017],
                     ])
             }
             
@@ -129,7 +127,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId") \
+                    JOIN "authors" ON ("authors"."id" = "books"."authorId") \
                     ORDER BY "books"."title"
                     """)
                 
@@ -142,7 +140,6 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                     ["id": 4, "authorId": 4, "title": "New York 2140", "year": 2017],
                     ["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993],
                     ["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014],
-                    ["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017],
                     ])
             }
         }
@@ -162,7 +159,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" ON (("authors"."id" = "books"."authorId") AND ("authors"."birthYear" >= 1900))
+                    JOIN "authors" ON (("authors"."id" = "books"."authorId") AND ("authors"."birthYear" >= 1900))
                     """)
 
                 // TODO: is it expected/well designed to have books whose author was born before 1900 here?
@@ -170,13 +167,11 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertMatch(graph, [
                     ["id": 1, "authorId": 2, "title": "Foe", "year": 1986],
                     ["id": 2, "authorId": 2, "title": "Three Stories", "year": 2014],
-                    ["id": 3, "authorId": 3, "title": "Moby-Dick", "year": 1851],
                     ["id": 4, "authorId": 4, "title": "New York 2140", "year": 2017],
                     ["id": 5, "authorId": 4, "title": "2312", "year": 2012],
                     ["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996],
                     ["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994],
                     ["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993],
-                    ["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017],
                     ])
             }
             
@@ -189,7 +184,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "books"."authorId")
+                    JOIN "authors" ON ("authors"."id" = "books"."authorId")
                     """)
                 
                 assertMatch(graph, [
@@ -201,7 +196,6 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                     ["id": 6, "authorId": 4, "title": "Blue Mars", "year": 1996],
                     ["id": 7, "authorId": 4, "title": "Green Mars", "year": 1994],
                     ["id": 8, "authorId": 4, "title": "Red Mars", "year": 1993],
-                    ["id": 9, "authorId": nil, "title": "Unattributed", "year": 2017],
                     ])
             }
         }
@@ -227,7 +221,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".* \
                     FROM "persons" "persons1" \
-                    LEFT JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId")
+                    JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId")
                     """)
             }
         }
@@ -247,7 +241,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "b".* \
                     FROM "books" "b" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "b"."authorId") \
+                    JOIN "authors" ON ("authors"."id" = "b"."authorId") \
                     WHERE ("b"."year" < 2000)
                     """)
             }
@@ -261,7 +255,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "b".* \
                     FROM "books" "b" \
-                    LEFT JOIN "authors" ON ("authors"."id" = "b"."authorId") \
+                    JOIN "authors" ON ("authors"."id" = "b"."authorId") \
                     WHERE ("b"."year" < 2000)
                     """)
             }
@@ -283,7 +277,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" "a" ON (("a"."id" = "books"."authorId") AND ("a"."birthYear" >= 1900)) \
+                    JOIN "authors" "a" ON (("a"."id" = "books"."authorId") AND ("a"."birthYear" >= 1900)) \
                     ORDER BY "a"."name"
                     """)
             }
@@ -298,7 +292,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "authors" "a" ON ("a"."id" = "books"."authorId") \
+                    JOIN "authors" "a" ON ("a"."id" = "books"."authorId") \
                     WHERE ("a"."birthYear" >= 1900)
                     """)
             }
@@ -316,7 +310,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "AUTHORS".* \
                     FROM "books" "AUTHORS" \
-                    LEFT JOIN "authors" "authors1" ON ("authors1"."id" = "AUTHORS"."authorId")
+                    JOIN "authors" "authors1" ON ("authors1"."id" = "AUTHORS"."authorId")
                     """)
             }
             
@@ -326,7 +320,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books1".* \
                     FROM "books" "books1" \
-                    LEFT JOIN "authors" "BOOKS" ON ("BOOKS"."id" = "books1"."authorId")
+                    JOIN "authors" "BOOKS" ON ("BOOKS"."id" = "books1"."authorId")
                     """)
             }
         }

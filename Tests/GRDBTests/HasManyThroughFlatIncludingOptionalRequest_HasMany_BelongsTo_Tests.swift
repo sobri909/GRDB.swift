@@ -10,7 +10,7 @@ import XCTest
 private typealias Country = HasManyThrough_HasMany_BelongsTo_Fixture.Country
 private typealias Person = HasManyThrough_HasMany_BelongsTo_Fixture.Person
 
-class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
+class HasManyThroughFlatIncludingOptionalRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
     
     // TODO: conditions on middle table
     
@@ -20,7 +20,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Country
-                .leftJoined(with: Country.citizens)
+                .flatIncluding(optional: Country.citizens)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -49,7 +49,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
                 // filter before
                 let graph = try Country
                     .filter(Column("code") != "FR")
-                    .leftJoined(with: Country.citizens)
+                    .flatIncluding(optional: Country.citizens)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -70,7 +70,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Country
-                    .leftJoined(with: Country.citizens)
+                    .flatIncluding(optional: Country.citizens)
                     .filter(Column("code") != "FR")
                     .fetchAll(db)
                 
@@ -93,7 +93,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
                 // order before
                 let graph = try Country
                     .order(Column("name").desc)
-                    .leftJoined(with: Country.citizens)
+                    .flatIncluding(optional: Country.citizens)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -116,7 +116,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
             do {
                 // order after
                 let graph = try Country
-                    .leftJoined(with: Country.citizens)
+                    .flatIncluding(optional: Country.citizens)
                     .order(Column("name").desc)
                     .fetchAll(db)
                 
@@ -147,7 +147,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
             do {
                 // filtered persons
                 let graph = try Country
-                    .leftJoined(with: Country.citizens.filter(Column("name") != "Craig"))
+                    .flatIncluding(optional: Country.citizens.filter(Column("name") != "Craig"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -169,7 +169,7 @@ class HasManyThroughLeftJoinedRequest_HasMany_BelongsTo_Tests: GRDBTestCase {
             do {
                 // ordered persons
                 let graph = try Country
-                    .leftJoined(with: Country.citizens.order(Column("name").desc))
+                    .flatIncluding(optional: Country.citizens.order(Column("name").desc))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """

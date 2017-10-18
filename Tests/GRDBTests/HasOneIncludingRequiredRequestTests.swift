@@ -18,7 +18,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             let graph = try Country
-                .including(Country.profile)
+                .including(required: Country.profile)
                 .fetchAll(db)
             
             assertEqualSQL(lastSQLQuery, """
@@ -44,7 +44,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
                 // filter before
                 let graph = try Country
                     .filter(Column("code") != "FR")
-                    .including(Country.profile)
+                    .including(required: Country.profile)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -63,7 +63,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // filter after
                 let graph = try Country
-                    .including(Country.profile)
+                    .including(required: Country.profile)
                     .filter(Column("code") != "FR")
                     .fetchAll(db)
                 
@@ -84,7 +84,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
                 // order before
                 let graph = try Country
                     .order(Column("code"))
-                    .including(Country.profile)
+                    .including(required: Country.profile)
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -104,7 +104,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // order after
                 let graph = try Country
-                    .including(Country.profile)
+                    .including(required: Country.profile)
                     .order(Column("code"))
                     .fetchAll(db)
                 
@@ -131,7 +131,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let graph = try Country
-                    .including(Country.profile.filter(Column("currency") == "EUR"))
+                    .including(required: Country.profile.filter(Column("currency") == "EUR"))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -148,7 +148,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
             
             do {
                 let graph = try Country
-                    .including(Country.profile.order(Column("area")))
+                    .including(required: Country.profile.order(Column("area")))
                     .fetchAll(db)
                 
                 assertEqualSQL(lastSQLQuery, """
@@ -183,7 +183,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let association = Person.hasOne(Person.self)
-                let request = Person.including(association)
+                let request = Person.including(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".*, "persons2".* \
                     FROM "persons" "persons1" \
@@ -203,7 +203,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
                 let request = Country.all()
                     .aliased("c")
                     .filter(Column("code") != "FR")
-                    .including(Country.profile)
+                    .including(required: Country.profile)
                 try assertEqualSQL(db, request, """
                     SELECT "c".*, "countryProfiles".* \
                     FROM "countries" "c" \
@@ -216,7 +216,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
                 // alias last
                 let request = Country
                     .filter(Column("code") != "FR")
-                    .including(Country.profile)
+                    .including(required: Country.profile)
                     .aliased("c")
                 try assertEqualSQL(db, request, """
                     SELECT "c".*, "countryProfiles".* \
@@ -236,7 +236,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // alias first
                 let request = Country
-                    .including(Country.profile
+                    .including(required: Country.profile
                         .aliased("a")
                         .filter(Column("currency") == "EUR"))
                     .order(Column("area").from("a"))
@@ -251,7 +251,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
             do {
                 // alias last
                 let request = Country
-                    .including(Country.profile
+                    .including(required: Country.profile
                         .order(Column("area"))
                         .aliased("a"))
                     .filter(Column("currency").from("a") == "EUR")
@@ -273,7 +273,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Country.including(Country.profile).aliased("COUNTRYPROFILES")
+                let request = Country.including(required: Country.profile).aliased("COUNTRYPROFILES")
                 try assertEqualSQL(db, request, """
                     SELECT "COUNTRYPROFILES".*, "countryProfiles1".* \
                     FROM "countries" "COUNTRYPROFILES" \
@@ -283,7 +283,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
             
             do {
                 // alias right
-                let request = Country.including(Country.profile.aliased("COUNTRIES"))
+                let request = Country.including(required: Country.profile.aliased("COUNTRIES"))
                 try assertEqualSQL(db, request, """
                     SELECT "countries1".*, "COUNTRIES".* \
                     FROM "countries" "countries1" \
@@ -299,7 +299,7 @@ class HasOneIncludingRequiredRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Country.including(Country.profile.aliased("a")).aliased("A")
+                let request = Country.including(required: Country.profile.aliased("a")).aliased("A")
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {
