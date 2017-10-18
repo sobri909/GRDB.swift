@@ -173,6 +173,8 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
             }
             
             do {
+                // TODO: is it expected that order is not respected here?
+                // Possible answer: ordering should be forbidden on associations, and always performed at the end of the full query.
                 let middleAssociation = Book.library.order(Column("name").desc)
                 let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book

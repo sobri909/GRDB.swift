@@ -155,6 +155,8 @@ class HasOneThroughIncludingRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase
             }
             
             do {
+                // TODO: is it expected that order is not respected here?
+                // Possible answer: ordering should be forbidden on associations, and always performed at the end of the full query.
                 let middleAssociation = Country.profile.order(Column("currency").desc)
                 let association = Country.hasOne(CountryProfile.continent, through: middleAssociation)
                 let graph = try Country

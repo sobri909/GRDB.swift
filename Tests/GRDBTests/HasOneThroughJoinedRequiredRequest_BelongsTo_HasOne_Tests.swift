@@ -25,19 +25,17 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             assertEqualSQL(lastSQLQuery, """
                 SELECT "books".* \
                 FROM "books" \
-                LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                 """)
             
             assertMatch(graph, [
-                ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                 ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                 ["isbn": "book3", "title": "Walden", "libraryId": 1],
                 ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                 ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
                 ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                 ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                 ])
         }
     }
@@ -57,19 +55,17 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     WHERE ("books"."title" <> 'Walden')
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                     ])
             }
             
@@ -83,19 +79,17 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     WHERE ("books"."title" <> 'Walden')
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                     ])
             }
             
@@ -109,8 +103,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     ORDER BY "books"."title" DESC
                     """)
                 
@@ -118,8 +112,6 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                     ["isbn": "book3", "title": "Walden", "libraryId": 1],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
@@ -136,8 +128,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     ORDER BY "books"."title" DESC
                     """)
                 
@@ -145,8 +137,6 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                     ["isbn": "book3", "title": "Walden", "libraryId": 1],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
@@ -170,25 +160,23 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON (("libraries"."id" = "books"."libraryId") AND ("libraries"."name" <> 'Secret Library')) \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON (("libraries"."id" = "books"."libraryId") AND ("libraries"."name" <> 'Secret Library')) \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
                 
                 // TODO: is it expected to have books of the secret library here?
                 // TODO: how to get books that are not in the secret library?
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book3", "title": "Walden", "libraryId": 1],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
-                    ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
-                    ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                     ])
             }
             
             do {
+                // TODO: is it expected that order is not respected here?
+                // Possible answer: ordering should be forbidden on associations, and always performed at the end of the full query.
                 let middleAssociation = Book.library.order(Column("name").desc)
                 let association = Book.hasOne(Library.address, through: middleAssociation)
                 let graph = try Book
@@ -198,19 +186,17 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book3", "title": "Walden", "libraryId": 1],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                     ])
             }
         }
@@ -229,21 +215,16 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON (("libraryAddresses"."libraryId" = "libraries"."id") AND ("libraryAddresses"."city" <> 'Paris'))
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON (("libraryAddresses"."libraryId" = "libraries"."id") AND ("libraryAddresses"."city" <> 'Paris'))
                     """)
                 
                 // TODO: is it expected to have books in Paris here?
                 // TODO: how to get books that are not in Paris?
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
-                    ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
-                    ["isbn": "book3", "title": "Walden", "libraryId": 1],
-                    ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                     ])
             }
             
@@ -255,19 +236,17 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
                 
                 assertMatch(graph, [
-                    ["isbn": "book1", "title": "Moby-Dick", "libraryId": nil],
                     ["isbn": "book2", "title": "The Fellowship of the Ring", "libraryId": 1],
                     ["isbn": "book3", "title": "Walden", "libraryId": 1],
                     ["isbn": "book4", "title": "Le Comte de Monte-Cristo", "libraryId": 1],
                     ["isbn": "book5", "title": "Querelle de Brest", "libraryId": 2],
                     ["isbn": "book6", "title": "Eden, Eden, Eden", "libraryId": 2],
                     ["isbn": "book7", "title": "Jonathan Livingston Seagull", "libraryId": 3],
-                    ["isbn": "book8", "title": "Necronomicon", "libraryId": 4],
                     ])
             }
         }
@@ -296,8 +275,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".* \
                     FROM "persons" "persons1" \
-                    LEFT JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId") \
-                    LEFT JOIN "persons" "persons3" ON ("persons3"."childId" = "persons2"."id")
+                    JOIN "persons" "persons2" ON ("persons2"."id" = "persons1"."parentId") \
+                    JOIN "persons" "persons3" ON ("persons3"."childId" = "persons2"."id")
                     """)
             }
         }
@@ -317,8 +296,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "books" "c" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "c"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "c"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     WHERE ("c"."title" <> 'Walden')
                     """)
             }
@@ -332,8 +311,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "books" "c" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "c"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "c"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id") \
                     WHERE ("c"."title" <> 'Walden')
                     """)
             }
@@ -346,8 +325,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
             }
         }
@@ -364,8 +343,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" "a" ON ("a"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "a"."id")
+                    JOIN "libraries" "a" ON ("a"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "a"."id")
                     """)
             }
             do {
@@ -375,8 +354,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
             }
         }
@@ -396,8 +375,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" "a" ON (("a"."libraryId" = "libraries"."id") AND ("a"."city" <> 'Paris')) \
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" "a" ON (("a"."libraryId" = "libraries"."id") AND ("a"."city" <> 'Paris')) \
                     ORDER BY "a"."city" DESC
                     """)
             }
@@ -411,8 +390,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" "a" ON ("a"."libraryId" = "libraries"."id") \
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" "a" ON ("a"."libraryId" = "libraries"."id") \
                     WHERE ("a"."city" <> 'Paris')
                     """)
             }
@@ -423,8 +402,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
-                    LEFT JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "books"."libraryId") \
+                    JOIN "libraryAddresses" ON ("libraryAddresses"."libraryId" = "libraries"."id")
                     """)
             }
             
@@ -442,8 +421,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "LIBRARYADDRESSES".* \
                     FROM "books" "LIBRARYADDRESSES" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "LIBRARYADDRESSES"."libraryId") \
-                    LEFT JOIN "libraryAddresses" "libraryAddresses1" ON ("libraryAddresses1"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "LIBRARYADDRESSES"."libraryId") \
+                    JOIN "libraryAddresses" "libraryAddresses1" ON ("libraryAddresses1"."libraryId" = "libraries"."id")
                     """)
             }
             
@@ -453,8 +432,8 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "books1".* \
                     FROM "books" "books1" \
-                    LEFT JOIN "libraries" ON ("libraries"."id" = "books1"."libraryId") \
-                    LEFT JOIN "libraryAddresses" "BOOKS" ON ("BOOKS\"."libraryId" = "libraries"."id")
+                    JOIN "libraries" ON ("libraries"."id" = "books1"."libraryId") \
+                    JOIN "libraryAddresses" "BOOKS" ON ("BOOKS\"."libraryId" = "libraries"."id")
                     """)
             }
         }

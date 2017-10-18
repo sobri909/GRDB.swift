@@ -25,16 +25,14 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             assertEqualSQL(lastSQLQuery, """
                 SELECT "countries".* \
                 FROM "countries" \
-                LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                 """)
             
             assertMatch(graph, [
-                ["code": "DE", "name": "Germany"],
                 ["code": "FR", "name": "France"],
+                ["code": "DE", "name": "Germany"],
                 ["code": "US", "name": "United States"],
-                ["code": "MX", "name": "Mexico"],
-                ["code": "AA", "name": "Atlantis"],
                 ])
         }
     }
@@ -54,16 +52,14 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
                     WHERE ("countries"."code" <> 'DE')
                     """)
                 
                 assertMatch(graph, [
                     ["code": "FR", "name": "France"],
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
             
@@ -77,16 +73,14 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
                     WHERE ("countries"."code" <> 'DE')
                     """)
                 
                 assertMatch(graph, [
                     ["code": "FR", "name": "France"],
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
             
@@ -100,17 +94,15 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
                     ORDER BY "countries"."name" DESC
                     """)
                 
                 assertMatch(graph, [
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
                     ["code": "DE", "name": "Germany"],
                     ["code": "FR", "name": "France"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
             
@@ -124,17 +116,15 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
                     ORDER BY "countries"."name" DESC
                     """)
                 
                 assertMatch(graph, [
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
                     ["code": "DE", "name": "Germany"],
                     ["code": "FR", "name": "France"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
         }
@@ -155,22 +145,20 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON (("countryProfiles"."countryCode" = "countries"."code") AND ("countryProfiles"."currency" <> 'EUR')) \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON (("countryProfiles"."countryCode" = "countries"."code") AND ("countryProfiles"."currency" <> 'EUR')) \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                     """)
                 
                 // TODO: is it expected to have countries whose currency is Euro here?
                 // TODO: how to get countries whose currency is not Euro?
                 assertMatch(graph, [
-                    ["code": "DE", "name": "Germany"],
-                    ["code": "FR", "name": "France"],
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
             
             do {
+                // TODO: is it expected that order is not respected here?
+                // Possible answer: ordering should be forbidden on associations, and always performed at the end of the full query.
                 let middleAssociation = Country.profile.order(Column("currency").desc)
                 let association = Country.hasOne(CountryProfile.continent, through: middleAssociation)
                 let graph = try Country
@@ -180,16 +168,14 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                     """)
                 
                 assertMatch(graph, [
-                    ["code": "DE", "name": "Germany"],
                     ["code": "FR", "name": "France"],
+                    ["code": "DE", "name": "Germany"],
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
         }
@@ -208,18 +194,15 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON (("continents"."id" = "countryProfiles"."continentId") AND ("continents"."name" <> 'America'))
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON (("continents"."id" = "countryProfiles"."continentId") AND ("continents"."name" <> 'America'))
                     """)
                 
                 // TODO: is it expected to have countries whose continent is America here?
                 // TODO: how to get countries whose continent is not America?
                 assertMatch(graph, [
-                    ["code": "DE", "name": "Germany"],
                     ["code": "FR", "name": "France"],
-                    ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
-                    ["code": "AA", "name": "Atlantis"],
+                    ["code": "DE", "name": "Germany"],
                     ])
             }
             
@@ -231,16 +214,14 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 assertEqualSQL(lastSQLQuery, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                     """)
                 
                 assertMatch(graph, [
-                    ["code": "DE", "name": "Germany"],
                     ["code": "FR", "name": "France"],
+                    ["code": "DE", "name": "Germany"],
                     ["code": "US", "name": "United States"],
-                    ["code": "MX", "name": "Mexico"],
-                    ["code": "AA", "name": "Atlantis"],
                     ])
             }
         }
@@ -269,8 +250,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "persons1".* \
                     FROM "persons" "persons1" \
-                    LEFT JOIN "persons" "persons2" ON ("persons2"."childId" = "persons1"."id") \
-                    LEFT JOIN "persons" "persons3" ON ("persons3"."id" = "persons2"."parentId")
+                    JOIN "persons" "persons2" ON ("persons2"."childId" = "persons1"."id") \
+                    JOIN "persons" "persons3" ON ("persons3"."id" = "persons2"."parentId")
                     """)
             }
         }
@@ -290,8 +271,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "countries" "c" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
                     WHERE ("c"."code" <> 'DE')
                     """)
             }
@@ -305,8 +286,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "countries" "c" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
                     WHERE ("c"."code" <> 'DE')
                     """)
             }
@@ -319,8 +300,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                     """)
             }
         }
@@ -337,8 +318,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" "a" ON ("a"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "a"."continentId")
+                    JOIN "countryProfiles" "a" ON ("a"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "a"."continentId")
                     """)
             }
             do {
@@ -348,8 +329,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                     """)
             }
         }
@@ -370,8 +351,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" "a" ON (("a"."id" = "countryProfiles"."continentId") AND ("a"."name" <> 'America')) \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" "a" ON (("a"."id" = "countryProfiles"."continentId") AND ("a"."name" <> 'America')) \
                     ORDER BY "a"."name"
                     """)
             }
@@ -386,8 +367,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" "a" ON ("a"."id" = "countryProfiles"."continentId") \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" "a" ON ("a"."id" = "countryProfiles"."continentId") \
                     WHERE ("a"."name" <> 'America')
                     """)
             }
@@ -398,8 +379,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
-                    LEFT JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries"."code") \
+                    JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId")
                     """)
             }
             
@@ -417,8 +398,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "CONTINENTS".* \
                     FROM "countries" "CONTINENTS" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "CONTINENTS"."code") \
-                    LEFT JOIN "continents" "continents1" ON ("continents1"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "CONTINENTS"."code") \
+                    JOIN "continents" "continents1" ON ("continents1"."id" = "countryProfiles"."continentId")
                     """)
             }
             
@@ -428,8 +409,8 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 try assertEqualSQL(db, request, """
                     SELECT "countries1".* \
                     FROM "countries" "countries1" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries1"."code") \
-                    LEFT JOIN "continents" "COUNTRIES" ON ("COUNTRIES"."id" = "countryProfiles"."continentId")
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "countries1"."code") \
+                    JOIN "continents" "COUNTRIES" ON ("COUNTRIES"."id" = "countryProfiles"."continentId")
                     """)
             }
         }
