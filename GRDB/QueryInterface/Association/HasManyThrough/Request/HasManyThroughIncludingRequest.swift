@@ -136,6 +136,7 @@ extension TableMapping {
 }
 
 extension HasManyThroughIncludingRequest where Left: QueryInterfaceRequestConvertible {
+    // TODO: test and rename joining(required/optional:)
     public func joined<Right2>(
         with association2: BelongsToAssociation<Left.RowDecoder, Right2>)
         -> HasManyThroughIncludingRequest<BelongsToJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
@@ -146,6 +147,7 @@ extension HasManyThroughIncludingRequest where Left: QueryInterfaceRequestConver
             association: association)
     }
     
+    // TODO: test and rename joining(required/optional:)
     public func joined<Right2>(
         with association2: HasOneAssociation<Left.RowDecoder, Right2>)
         -> HasManyThroughIncludingRequest<HasOneJoinedRequest<Left.RowDecoder, Right2>, MiddleAssociation, RightAssociation>
@@ -156,6 +158,7 @@ extension HasManyThroughIncludingRequest where Left: QueryInterfaceRequestConver
             association: association)
     }
     
+    // TODO: test
     public func filter<Right2, Annotation2>(
         _ annotationPredicate: HasManyAnnotationPredicate<Left.RowDecoder, Right2, Annotation2>)
         -> HasManyThroughIncludingRequest<HasManyAnnotationPredicateRequest<Left.RowDecoder, Right2, Annotation2>, MiddleAssociation, RightAssociation>

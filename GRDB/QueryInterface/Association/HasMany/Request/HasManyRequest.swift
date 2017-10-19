@@ -42,6 +42,7 @@ extension MutablePersistable {
         return association.all(from: self)
     }
     
+    // TODO: test
     public func fetchCursor<Right>(_ db: Database, _ association: HasManyAssociation<Self, Right>) throws
         -> RecordCursor<Right>
         where Right: RowConvertible
@@ -56,6 +57,7 @@ extension MutablePersistable {
         return try association.all(from: self).fetchAll(db)
     }
     
+    // TODO: test
     public func fetchOne<Right>(_ db: Database, _ association: HasManyAssociation<Self, Right>) throws
         -> Right?
         where Right: RowConvertible

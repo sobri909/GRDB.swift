@@ -77,6 +77,7 @@ extension MutablePersistable {
         return association.all(from: self)
     }
     
+    // TODO: test
     public func fetchCursor<MiddleAssociation, RightAssociation>(_ db: Database, _ association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>) throws
         -> RecordCursor<RightAssociation.RightAssociated>
         where
@@ -94,6 +95,7 @@ extension MutablePersistable {
         return try association.all(from: self).fetchAll(db)
     }
     
+    // TODO: test
     public func fetchOne<MiddleAssociation, RightAssociation>(_ db: Database, _ association: HasManyThroughAssociation<MiddleAssociation, RightAssociation>) throws
         -> RightAssociation.RightAssociated?
         where

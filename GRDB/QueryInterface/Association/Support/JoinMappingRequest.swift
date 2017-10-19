@@ -40,6 +40,7 @@ struct JoinMappingRequest {
                     return false
                 }
             }
+            // TODO: test
             if let destinationColumns = destinationColumns {
                 let destinationColumns = Set(destinationColumns.lazy.map { $0.lowercased() })
                 let foreignKeyColumns = Set(foreignKey.mapping.lazy.map { $0.destination.lowercased() })
@@ -54,6 +55,7 @@ struct JoinMappingRequest {
         if let foreignKey = foreignKeys.first {
             if foreignKeys.count == 1 {
                 // Non-ambiguous
+                // TODO: test
                 return foreignKey.mapping
             } else {
                 // Ambiguous: can't choose
@@ -65,6 +67,7 @@ struct JoinMappingRequest {
         if let originColumns = originColumns {
             let destinationColumns = try db.primaryKey(destinationTable).columns
             if (originColumns.count == destinationColumns.count) {
+                // TODO: test
                 return zip(originColumns, destinationColumns).map {
                     (origin: $0, destination: $1)
                 }
