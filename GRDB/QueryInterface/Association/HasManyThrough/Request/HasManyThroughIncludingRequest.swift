@@ -23,7 +23,7 @@ extension HasManyThroughIncludingRequest : RequestDerivableWrapper {
 }
 
 extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, RightAssociation.RightAssociated : RowConvertible {
-    public func fetchAll(_ db: Database) throws -> [(Left.RowDecoder, [RightAssociation.RightAssociated])] {
+    public func fetchAll(_ db: Database) throws -> [(left: Left.RowDecoder, right: [RightAssociation.RightAssociated])] {
         let middleMapping = try association.middleAssociation.mapping(db)
         guard middleMapping.count == 1 else {
             fatalError("not implemented: support for compound foreign keys")
@@ -31,7 +31,7 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
         let leftKeyColumn = middleMapping[0].left
         let middleKeyColumn = middleMapping[0].right
         
-        var result: [(Left.RowDecoder, [RightAssociation.RightAssociated])] = []
+        var result: [(left: Left.RowDecoder, right: [RightAssociation.RightAssociated])] = []
         var resultIndexes : [DatabaseValue: [Int]] = [:]
         
         // SELECT * FROM left...
@@ -49,7 +49,7 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
                     if resultIndexes[key] == nil { resultIndexes[key] = [] }
                     resultIndexes[key]!.append(recordIndex)
                 }
-                result.append((left, []))
+                result.append((left: left, []))
             }
         }
         
@@ -106,7 +106,7 @@ extension HasManyThroughIncludingRequest where Left.RowDecoder: RowConvertible, 
             for index in indexes {
                 // instanciate for each index, in order to never reuse references
                 let right = RightAssociation.RightAssociated(row: rightRow)
-                result[index].1.append(right)
+                result[index].right.append(right)
             }
         }
         

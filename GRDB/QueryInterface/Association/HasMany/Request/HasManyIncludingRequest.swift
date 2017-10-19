@@ -20,7 +20,7 @@ extension HasManyIncludingRequest : RequestDerivableWrapper {
 }
 
 extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: RowConvertible {
-    public func fetchAll(_ db: Database) throws -> [(Left.RowDecoder, [Right])] {
+    public func fetchAll(_ db: Database) throws -> [(left: Left.RowDecoder, right: [Right])] {
         let mapping = try association.mapping(db)
         guard mapping.count == 1 else {
             fatalError("not implemented: support for compound foreign keys")
@@ -28,7 +28,7 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
         let leftKeyColumn = mapping[0].left
         let rightKeyColumn = mapping[0].right
         
-        var result: [(Left.RowDecoder, [Right])] = []
+        var result: [(left: Left.RowDecoder, right: [Right])] = []
         var resultIndexes : [DatabaseValue: Int] = [:]
         
         // SELECT * FROM left...
@@ -43,7 +43,7 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
                 let left = Left.RowDecoder(row: row)
                 let key: DatabaseValue = row[keyIndex]
                 resultIndexes[key] = recordIndex
-                result.append((left, []))
+                result.append((left: left, []))
             }
         }
         
@@ -68,7 +68,7 @@ extension HasManyIncludingRequest where Left.RowDecoder: RowConvertible, Right: 
                 let right = Right(row: row)
                 let key: DatabaseValue = row[keyIndex]
                 let index = resultIndexes[key]! // index has been recorded during leftRequest iteration
-                result[index].1.append(right)
+                result[index].right.append(right)
             }
         }
         
