@@ -39,14 +39,14 @@ Without associations, fetching books from authors would look like:
 // All books written by an author:
 let author: Author = ...
 let books: [Book] = try Book
-    .filter(Book.Columns.authorId == author.id)
+    .filter(Column("authorId") == author.id)
     .fetchAll(db)
 
 // All authors with their books:
 let authors = try Author.fetchAll(db)
 let allAuthorsWithTheirBooks: [(Author, [Book])] = try authors.map { author in
     let books = try Book
-        .filter(Book.Columns.authorId == author.id)
+        .filter(Column("authorId") == author.id)
         .fetchAll(db)
     return (author, books)
 }
@@ -582,8 +582,8 @@ The request returned by `including(_:)` can be further refined just like other [
 try dbQueue.inDatabase { db in
     let request = Book
         .including(Book.author) // <- include author
-        .filter(Book.Columns.genre == "Thriller")
-        .order(Book.Columns.price)
+        .filter(Column("genre") == "Thriller")
+        .order(Column("price"))
         .limit(10)
     
     // [(Book, Author)] or [(Book, Author?)]
@@ -597,8 +597,8 @@ The association can be included at any point. The code snippet below returns the
 // The ten cheapest thrillers, with their author:
 try dbQueue.inDatabase { db in
     let thrillersRequest = Book
-        .filter(Book.Columns.genre == "Thriller")
-        .order(Book.Columns.price)
+        .filter(Column("genre") == "Thriller")
+        .order(Column("price"))
         .limit(10)
         
     // [(Book, Author)] or [(Book, Author?)]
@@ -631,10 +631,10 @@ struct Book: TableMapping, RowConvertible {
 
 // All books by French authors
 try dbQueue.inDatabase { db in
-    let frenchAuthors = Book.author.filter(Author.Columns.countryCode == "FR")
+    let frenchAuthors = Book.author.filter(Column("countryCode") == "FR")
     let request = Book
         .including(frenchAuthors)
-        .order(Book.Columns.title)
+        .order(Column("title"))
     let pairs = try request.fetchAll(db) // [(Book, Author)]
 }
 ```
