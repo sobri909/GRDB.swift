@@ -504,6 +504,8 @@ extension Array where Iterator.Element == SQLSourceQualifier {
             if group.count > 1 {
                 if group.filter({ $0.userProvided }).count >= 2 {
                     // TODO: shouldn't this be a fatal error?
+                    // For the yes: conflicting aliases are clearly a programmer error: somebody did provide conflicting aliases.
+                    // For the no: conflicting aliases do not throw a fatal error when they are embedded in a raw SQL query.
                     throw DatabaseError(message: "ambiguous alias: \(group[0].qualifiedName!)")
                 }
                 ambiguousGroups.append(group)
