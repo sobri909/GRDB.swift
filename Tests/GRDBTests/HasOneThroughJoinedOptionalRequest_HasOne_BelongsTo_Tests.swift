@@ -447,7 +447,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let countryRef = TableReference(alias: "a")
+                let countryRef = TableReference(alias: "A")
                 let continentRef = TableReference(alias: "a")
                 let request = Country.joining(optional: Country.continent.identified(by: continentRef)).identified(by: countryRef)
                 _ = try request.fetchAll(db)

@@ -20,6 +20,7 @@ GRDB 3.0
 
 Associations
 
+- [ ] prevent deriving associations with group, order, etc where it is not (yet) relevant (fatalError)
 - [X] has_many :through
 - [X] has_one :through
 - [ ] has_and_belongs_to_many

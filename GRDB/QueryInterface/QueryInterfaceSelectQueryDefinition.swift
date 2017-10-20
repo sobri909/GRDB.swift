@@ -489,12 +489,15 @@ extension Array where Iterator.Element == SQLSourceQualifier {
             }
         }
         
+        // TODO: fatal error if a two qualifiers are the same (===)
+        
         var uniqueNames: Set<String> = []
         var ambiguousGroups: [[SQLSourceQualifier]] = []
         
         for (lowercaseName, group) in groups {
             if group.count > 1 {
                 if group.filter({ $0.userProvided }).count >= 2 {
+                    // TODO: shouldn't this be a fatal error?
                     throw DatabaseError(message: "ambiguous alias: \(group[0].qualifiedName!)")
                 }
                 ambiguousGroups.append(group)

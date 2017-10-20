@@ -261,29 +261,31 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias first
+                let bookRef = TableReference(alias: "a")
                 let request = Book.all()
-                    .aliased("b")
+                    .identified(by: bookRef)
                     .filter(Column("year") < 2000)
                     .including(required: Book.author)
                 try assertEqualSQL(db, request, """
-                    SELECT "b".*, "authors".* \
-                    FROM "books" "b" \
-                    JOIN "authors" ON ("authors"."id" = "b"."authorId") \
-                    WHERE ("b"."year" < 2000)
+                    SELECT "a".*, "authors".* \
+                    FROM "books" "a" \
+                    JOIN "authors" ON ("authors"."id" = "a"."authorId") \
+                    WHERE ("a"."year" < 2000)
                     """)
             }
             
             do {
                 // alias last
+                let bookRef = TableReference(alias: "a")
                 let request = Book
                     .including(required: Book.author)
                     .filter(Column("year") < 2000)
-                    .aliased("b")
+                    .identified(by: bookRef)
                 try assertEqualSQL(db, request, """
-                    SELECT "b".*, "authors".* \
-                    FROM "books" "b" \
-                    JOIN "authors" ON ("authors"."id" = "b"."authorId") \
-                    WHERE ("b"."year" < 2000)
+                    SELECT "a".*, "authors".* \
+                    FROM "books" "a" \
+                    JOIN "authors" ON ("authors"."id" = "a"."authorId") \
+                    WHERE ("a"."year" < 2000)
                     """)
             }
         }
@@ -296,9 +298,10 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias first
+                let authorRef = TableReference(alias: "a")
                 let request = Book
                     .including(required: Book.author
-                        .aliased("a")
+                        .identified(by: authorRef)
                         .order(Column("name")))
                     .filter(Column("birthYear").from("a") >= 1900)
                 try assertEqualSQL(db, request, """
@@ -312,10 +315,11 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             
             do {
                 // alias last
+                let authorRef = TableReference(alias: "a")
                 let request = Book
                     .including(required: Book.author
                         .filter(Column("birthYear") >= 1900)
-                        .aliased("a"))
+                        .identified(by: authorRef))
                     .order(Column("name").from("a"))
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
@@ -334,7 +338,8 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Book.including(required: Book.author).aliased("AUTHORS")
+                let bookRef = TableReference(alias: "AUTHORS") // Create name conflict
+                let request = Book.including(required: Book.author).identified(by: bookRef)
                 try assertEqualSQL(db, request, """
                     SELECT "AUTHORS".*, "authors1".* \
                     FROM "books" "AUTHORS" JOIN "authors" "authors1" \
@@ -344,7 +349,8 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
             
             do {
                 // alias right
-                let request = Book.including(required: Book.author.aliased("BOOKS"))
+                let authorRef = TableReference(alias: "BOOKS") // Create name conflict
+                let request = Book.including(required: Book.author.identified(by: authorRef))
                 try assertEqualSQL(db, request, """
                     SELECT "books1".*, "BOOKS".* \
                     FROM "books" "books1" \
@@ -360,7 +366,9 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Book.including(required: Book.author.aliased("a")).aliased("A")
+                let bookRef = TableReference(alias: "A")
+                let authorRef = TableReference(alias: "a")
+                let request = Book.including(required: Book.author.identified(by: authorRef)).identified(by: bookRef)
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

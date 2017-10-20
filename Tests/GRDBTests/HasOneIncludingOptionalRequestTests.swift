@@ -208,29 +208,31 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias first
+                let countryRef = TableReference(alias: "a")
                 let request = Country.all()
-                    .aliased("c")
+                    .identified(by: countryRef)
                     .filter(Column("code") != "FR")
                     .including(optional: Country.profile)
                 try assertEqualSQL(db, request, """
-                    SELECT "c".*, "countryProfiles".* \
-                    FROM "countries" "c" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
-                    WHERE ("c"."code" <> 'FR')
+                    SELECT "a".*, "countryProfiles".* \
+                    FROM "countries" "a" \
+                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "a"."code") \
+                    WHERE ("a"."code" <> 'FR')
                     """)
             }
             
             do {
                 // alias last
+                let countryRef = TableReference(alias: "a")
                 let request = Country
                     .filter(Column("code") != "FR")
                     .including(optional: Country.profile)
-                    .aliased("c")
+                    .identified(by: countryRef)
                 try assertEqualSQL(db, request, """
-                    SELECT "c".*, "countryProfiles".* \
-                    FROM "countries" "c" \
-                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
-                    WHERE ("c"."code" <> 'FR')
+                    SELECT "a".*, "countryProfiles".* \
+                    FROM "countries" "a" \
+                    LEFT JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "a"."code") \
+                    WHERE ("a"."code" <> 'FR')
                     """)
             }
         }
@@ -243,9 +245,11 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias first
-                let request = Country.including(optional: Country.profile
-                    .aliased("a")
-                    .filter(Column("currency") == "EUR"))
+                let profileRef = TableReference(alias: "a")
+                let request = Country
+                    .including(optional: Country.profile
+                        .identified(by: profileRef)
+                        .filter(Column("currency") == "EUR"))
                     .order(Column("area").from("a"))
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
@@ -257,9 +261,11 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
             
             do {
                 // alias last
-                let request = Country.including(optional: Country.profile
-                    .order(Column("area"))
-                    .aliased("a"))
+                let profileRef = TableReference(alias: "a")
+                let request = Country
+                    .including(optional: Country.profile
+                        .order(Column("area"))
+                        .identified(by: profileRef))
                     .filter(Column("currency").from("a") == "EUR")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
@@ -279,7 +285,8 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 // alias left
-                let request = Country.including(optional: Country.profile).aliased("COUNTRYPROFILES")
+                let countryRef = TableReference(alias: "COUNTRYPROFILES") // Create name conflict
+                let request = Country.including(optional: Country.profile).identified(by: countryRef)
                 try assertEqualSQL(db, request, """
                     SELECT "COUNTRYPROFILES".*, "countryProfiles1".* \
                     FROM "countries" "COUNTRYPROFILES" \
@@ -289,7 +296,8 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
             
             do {
                 // alias right
-                let request = Country.including(optional: Country.profile.aliased("COUNTRIES"))
+                let profileRef = TableReference(alias: "COUNTRIES") // Create name conflict
+                let request = Country.including(optional: Country.profile.identified(by: profileRef))
                 try assertEqualSQL(db, request, """
                     SELECT "countries1".*, "COUNTRIES".* \
                     FROM "countries" "countries1" \
@@ -305,7 +313,9 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
         
         try dbQueue.inDatabase { db in
             do {
-                let request = Country.including(optional: Country.profile.aliased("a")).aliased("A")
+                let countryRef = TableReference(alias: "A")
+                let profileRef = TableReference(alias: "a")
+                let request = Country.including(optional: Country.profile.identified(by: profileRef)).identified(by: countryRef)
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

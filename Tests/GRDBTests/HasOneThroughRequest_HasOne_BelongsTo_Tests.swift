@@ -158,7 +158,8 @@ class HasOneThroughRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias first
                 let country = try Country.fetchOne(db, key: "FR")!
-                let request = country.request(Country.continent.aliased("a"))
+                let continentRef = TableReference(alias: "a")
+                let request = country.request(Country.continent.identified(by: continentRef))
                 try assertEqualSQL(db, request, """
                     SELECT "a".* \
                     FROM "continents" "a" \
@@ -169,7 +170,8 @@ class HasOneThroughRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias last
                 let country = try Country.fetchOne(db, key: "FR")!
-                let request = country.request(Country.continent).aliased("a")
+                let continentRef = TableReference(alias: "a")
+                let request = country.request(Country.continent).identified(by: continentRef)
                 try assertEqualSQL(db, request, """
                     SELECT "a".* \
                     FROM "continents" "a" \
