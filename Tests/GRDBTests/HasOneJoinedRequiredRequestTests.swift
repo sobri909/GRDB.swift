@@ -239,9 +239,10 @@ class HasOneJoinedRequiredRequestTests: GRDBTestCase {
             do {
                 // alias first
                 let profileRef = TableReference(alias: "a")
-                let request = Country.joining(required: Country.profile
-                    .identified(by: profileRef)
-                    .filter(Column("currency") == "EUR"))
+                let request = Country
+                    .joining(required: Country.profile
+                        .identified(by: profileRef)
+                        .filter(Column("currency") == "EUR"))
                     .order(profileRef[Column("area")])
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
@@ -254,9 +255,10 @@ class HasOneJoinedRequiredRequestTests: GRDBTestCase {
             do {
                 // alias last
                 let profileRef = TableReference(alias: "a")
-                let request = Country.joining(required: Country.profile
-                    .order(Column("area"))
-                    .identified(by: profileRef))
+                let request = Country
+                    .joining(required: Country.profile
+                        .order(Column("area"))
+                        .identified(by: profileRef))
                     .filter(profileRef[Column("currency")] == "EUR")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \

@@ -374,9 +374,10 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias first
                 let addressRef = TableReference(alias: "a")
-                let request = Book.joining(required: Book.libraryAddress
-                    .identified(by: addressRef)
-                    .filter(Column("city") != "Paris"))
+                let request = Book
+                    .joining(required: Book.libraryAddress
+                        .identified(by: addressRef)
+                        .filter(Column("city") != "Paris"))
                     .order(addressRef[Column("city")].desc)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -390,9 +391,10 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias last
                 let addressRef = TableReference(alias: "a")
-                let request = Book.joining(required: Book.libraryAddress
-                    .order(Column("city").desc)
-                    .identified(by: addressRef))
+                let request = Book
+                    .joining(required: Book.libraryAddress
+                        .order(Column("city").desc)
+                        .identified(by: addressRef))
                     .filter(addressRef[Column("city")] != "Paris")
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \

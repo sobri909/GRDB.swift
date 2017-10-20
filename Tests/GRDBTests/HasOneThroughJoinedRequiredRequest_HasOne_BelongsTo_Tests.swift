@@ -349,9 +349,10 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias first
                 let continentRef = TableReference(alias: "a")
-                let request = Country.joining(required: Country.continent
-                    .identified(by: continentRef)
-                    .filter(Column("name") != "America"))
+                let request = Country
+                    .joining(required: Country.continent
+                        .identified(by: continentRef)
+                        .filter(Column("name") != "America"))
                     .order(continentRef[Column("name")])
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
@@ -365,9 +366,10 @@ class HasOneThroughJoinedRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias last
                 let continentRef = TableReference(alias: "a")
-                let request = Country.joining(required: Country.continent
-                    .order(Column("name"))
-                    .identified(by: continentRef))
+                let request = Country
+                    .joining(required: Country.continent
+                        .order(Column("name"))
+                        .identified(by: continentRef))
                     .filter(continentRef[Column("name")] != "America")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
