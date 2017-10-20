@@ -535,12 +535,12 @@ extension String {
     /// "foo12" => "foo"
     var databaseQualifierRadical: String {
         let digits: ClosedRange<Character> = "0"..."9"
-        let radicalEndIndex = characters            // "foo12"
+        let radicalEndIndex = self                  // "foo12"
             .reversed()                             // "21oof"
             .prefix(while: { digits.contains($0) }) // "21"
-            .endIndex                               // reversed(3)
-            .base                                   // 3
-        return String(characters.prefix(upTo: radicalEndIndex))
+            .endIndex                               // reversed(foo^12)
+            .base                                   // foo^12
+        return String(prefix(upTo: radicalEndIndex))
     }
 }
 
