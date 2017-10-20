@@ -97,11 +97,7 @@ For example, if your application includes authors and books, and each book is as
 
 ```swift
 struct Book: TableMapping {
-    // When books always have an author in the database:
     static let author = belongsTo(Author.self)
-    
-    // When some books don't have any author in the database:
-    static let author = belongsTo(optional: Author.self)
     ...
 }
 
@@ -127,7 +123,8 @@ migrator.registerMigration("Books and Authors") { db in
     try db.create(table: "books") { t in
         t.column("id", .integer).primaryKey()
         t.column("authorId", .integer)
-            .notNull() // When books always have an author in the database
+            .notNull()
+            .indexed()
             .references("authors", onDelete: .cascade)
         t.column("title", .text)
     }
@@ -143,11 +140,7 @@ For example, if your application has one database table for countries, and anoth
 
 ```swift
 struct Country: TableMapping {
-    // When countries always have a profile in the database:
     static let profile = hasOne(DemographicProfile.self)
-    
-    // When some countries don't have any profile in the database:
-    static let profile = hasOne(optional: DemographicProfile.self)
     ...
 }
 
@@ -173,6 +166,7 @@ migrator.registerMigration("Countries and DemographicProfiles") { db in
     try db.create(table: "demographicProfiles") { t in
         t.column("id", .integer).primaryKey()
         t.column("countryCode", .text)
+            .notNull()
             .unique()
             .references("countries", onDelete: .cascade)
         t.column("population", .integer)
@@ -215,6 +209,7 @@ migrator.registerMigration("Books and Authors") { db in
     try db.create(table: "books") { t in
         t.column("id", .integer).primaryKey()
         t.column("authorId", .integer)
+            .notNull()
             .indexed()
             .references("authors", onDelete: .cascade)
         t.column("title", .text)
@@ -269,9 +264,11 @@ migrator.registerMigration("Countries, Passports, and Citizens") { db in
     try db.create(table: "passports") { t in
         t.column("countryCode", .text)
             .notNull()
+            .indexed()
             .references("countries", onDelete: .cascade)
         t.column("citizenId", .text)
             .notNull()
+            .indexed()
             .references("citizens", onDelete: .cascade)
         t.primaryKey(["countryCode", "citizenId"])
         t.column("issueDate", .date)
@@ -325,6 +322,7 @@ migrator.registerMigration("Books, Libraries, and Addresses") { db in
         t.column("id", .integer).primaryKey()
         t.column("libraryId", .integer)
             .notNull()
+            .indexed()
             .references("libraries", onDelete: .cascade)
         t.column("title", .text).primaryKey()
     }
@@ -493,23 +491,16 @@ The *BelongsTo* association sets up a one-to-one connection from a record type t
 To declare a *BelongsTo* association, you use one of those static methods:
 
 - `belongsTo(_:using:)`
-- `belongsTo(optional:using:)`
 
-The first argument is the type of the targetted record.
+The first argument is the type of the targetted record. It must adopt the [TableMapping] protocol. It will often adopt the [RowConvertible] protocol as well, so that you can fetch it from association-based requests.
 
-The `optional:` variant declares that the database may not always contain a matching record. You can think of it as the Swift `Optional` type: just as a Swift optional tells that a value may be missing, `belongsTo(optional:)` tells that an associated record may be missing in the database.
-
-The second `using:` argument is a foreign key that is only necessary when GRDB can't automatically infer the columns that supports the association from the database schema (see [Associations and the Database Schema](#associations-and-the-database-schema)).
+The `using:` argument is a foreign key that is only necessary when GRDB can't automatically infer the columns that supports the association from the database schema (see [Associations and the Database Schema](#associations-and-the-database-schema)).
 
 For example:
 
 ```swift
 struct Book: TableMapping {
-    // When books always have an author in the database:
     static let author = belongsTo(Author.self)
-    
-    // When some books don't have any author in the database:
-    static let author = belongsTo(optional: Author.self)
     ...
 }
 
@@ -521,16 +512,18 @@ struct Author: TableMapping {
 
 ### Using the Association
 
-The *BelongsTo* association adds three methods to the declaring Record:
+The *BelongsTo* association adds static and instance methods to the declaring record:
 
-- `Record.including(_:)`
-- `Record.join(_:)`
+- `Record.including(optional:)`
+- `Record.including(required:)`
+- `Record.joining(optional:)`
+- `Record.joining(required:)`
 - `record.fetchOne(_:_:)`
 
 
-#### `Record.including(_:)`
+#### `Record.including(optional:)`, `Record.including(required:)`
 
-The `including(_:)` static method returns a request that fetches all associated pairs as Swift tuples:
+The `including()` static methods return a request that fetches all associated pairs as Swift tuples:
 
 ```swift
 struct Author: TableMapping, RowConvertible {
@@ -543,50 +536,58 @@ struct Book: TableMapping, RowConvertible {
 }
 
 try dbQueue.inDatabase { db in
-    let request = Book.including(Book.author)
-    let pairs = try request.fetchAll(db) // [(Book, Author)]
+    let request = Book.including(optional: Book.author)
+    // [(left: Book, right: Author?)]
+    let pairs = try request.fetchAll(db)
+    
+    let request = Book.including(required: Book.author)
+    // [(left: Book, right: Author)]
+    let pairs = try request.fetchAll(db)
 }
 ```
 
-When the association is declared with the `optional:` variant, the right object of the tuple is optional:
+Both requests fetch associated pairs made of a book and its author. The `optional` variant may return books without author (those that don't have any author in the database), whereas the `required` variant only returns books that have an author. You'll choose one or the other, depending on your database schema, and how you intend to process the fetched pairs.
 
-```swift
-struct Book: TableMapping, RowConvertible {
-    static let author = belongsTo(optional: Author.self)
-    ...
-}
-
-try dbQueue.inDatabase { db in
-    let request = Book.including(Book.author)
-    let pairs = try request.fetchAll(db) // [(Book, Author?)]
-}
-```
-
-You fetch all associated pairs as an Array with `fetchAll`, as a [cursor] with `fetchCursor`, or you can fetch the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift/blob/master/README.md#fetching-methods) for more information:
+You fetch all associated pairs as an Array with `fetchAll`, as a [cursor] with `fetchCursor`, and you fetch the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift/blob/master/README.md#fetching-methods) for more information:
 
 ```swift
 try dbQueue.inDatabase { db in
-    let request = Book.including(Book.author)
-    try request.fetchCursor(db) // A cursor of (Book, Author) or (Book, Author?)
-    try request.fetchAll(db)    // [(Book, Author)] or [(Book, Author?)]
-    try request.fetchOne(db)    // (Book, Author)? or (Book, Author?)?
+    let request = Book.including(required: Book.author)
+    try request.fetchCursor(db) // A cursor of (Book, Author)
+    try request.fetchAll(db)    // [(Book, Author)]
+    try request.fetchOne(db)    // (Book, Author)?
 }
 ```
 
 ##### Filtering, Ordering, Aliasing
 
-The request returned by `including(_:)` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter`, `order` or `limit` methods:
+The request returned by `including()` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter`, `order` or `limit` methods:
 
 ```swift
-// The ten cheapest thrillers, with their author:
+// The ten cheapest thrillers, with their eventual author:
 try dbQueue.inDatabase { db in
     let request = Book
-        .including(Book.author) // <- include author
+        .including(optional: Book.author)
         .filter(Column("genre") == "Thriller")
         .order(Column("price"))
         .limit(10)
     
-    // [(Book, Author)] or [(Book, Author?)]
+    // [(Book, Author?)]
+    let pairs = try request.fetchAll(db)
+}
+
+// TODO: introduce this example later
+// The ten most recent books written by a French author:
+try dbQueue.inDatabase { db in
+    let frenchAuthors = Book
+        .author
+        .filter(Column("country") == "France")
+    let request = Book
+        .including(required: frenchAuthors)
+        .order(Column("year").desc)
+        .limit(10)
+    
+    // [(Book, Author)]
     let pairs = try request.fetchAll(db)
 }
 ```
@@ -668,3 +669,5 @@ The fetched record is an optional even if the association has not been declared 
 [cursor]: https://github.com/groue/GRDB.swift/blob/master/README.md#cursors
 [migration]: https://github.com/groue/GRDB.swift/blob/master/README.md#migrations
 [Records Protocol Overview]: https://github.com/groue/GRDB.swift/blob/master/README.md#record-protocols-overview
+[RowConvertible]: https://github.com/groue/GRDB.swift/blob/master/README.md#rowconvertible-protocol
+[TableMapping]: https://github.com/groue/GRDB.swift/blob/master/README.md#tablemapping-protocol
