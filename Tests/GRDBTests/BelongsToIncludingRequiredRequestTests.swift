@@ -303,7 +303,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
                     .including(required: Book.author
                         .identified(by: authorRef)
                         .order(Column("name")))
-                    .filter(Column("birthYear").from("a") >= 1900)
+                    .filter(authorRef[Column("birthYear")] >= 1900)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
                     FROM "books" \
@@ -320,7 +320,7 @@ class BelongsToIncludingRequiredRequestTests: GRDBTestCase {
                     .including(required: Book.author
                         .filter(Column("birthYear") >= 1900)
                         .identified(by: authorRef))
-                    .order(Column("name").from("a"))
+                    .order(authorRef[Column("name")])
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
                     FROM "books" \

@@ -375,7 +375,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                     .including(required: Book.libraryAddress
                         .identified(by: addressRef)
                         .filter(Column("city") != "Paris"))
-                    .order(Column("city").from("a").desc)
+                    .order(addressRef[Column("city")].desc)
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
                     FROM "books" \
@@ -392,7 +392,7 @@ class HasOneThroughIncludingRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase
                     .including(required: Book.libraryAddress
                         .order(Column("city").desc)
                         .identified(by: addressRef))
-                    .filter(Column("city").from("a") != "Paris")
+                    .filter(addressRef[Column("city")] != "Paris")
                 try assertEqualSQL(db, request, """
                     SELECT "books".*, "a".* \
                     FROM "books" \

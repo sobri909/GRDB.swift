@@ -368,7 +368,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                     .joining(optional: Country.continent
                         .identified(by: profileRef)
                         .filter(Column("name") != "America"))
-                    .order(Column("name").from("a"))
+                    .order(profileRef[Column("name")])
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
@@ -385,7 +385,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                     .joining(optional: Country.continent
                         .order(Column("name"))
                         .identified(by: profileRef))
-                    .filter(Column("name").from("a") != "America")
+                    .filter(profileRef[Column("name")] != "America")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \

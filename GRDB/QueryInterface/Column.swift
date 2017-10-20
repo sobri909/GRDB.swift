@@ -30,14 +30,6 @@ public struct Column {
         self.name = name
         self.qualifier = qualifier
     }
-    
-    /// Returns a qualified column that is able to resolve ambiguities in
-    /// joined queries.
-    public func from(_ tableAlias: String) -> Column {
-        let qualifier = SQLSourceQualifier()
-        qualifier.alias = tableAlias
-        return Column(name, qualifier: qualifier)
-    }
 }
 
 extension Column : SQLExpression {

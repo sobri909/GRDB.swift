@@ -276,7 +276,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                     .joining(required: Book.author
                         .identified(by: authorRef)
                         .filter(Column("birthYear") >= 1900))
-                    .order(Column("name").from("a"))
+                    .order(authorRef[Column("name")])
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
@@ -292,7 +292,7 @@ class BelongsToJoinedRequiredRequestTests: GRDBTestCase {
                     .joining(required: Book.author
                         .order(Column("name"))
                         .identified(by: authorRef))
-                    .filter(Column("birthYear").from("a") >= 1900)
+                    .filter(authorRef[Column("birthYear")] >= 1900)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \

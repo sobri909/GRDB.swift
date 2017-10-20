@@ -437,14 +437,20 @@ public class TableReference {
         }
     }
     
-    // TODO
+    /// TODO
     public init() {
         qualifier = SQLSourceQualifier()
     }
     
-    // TODO
+    /// TODO
     public init(alias: String) {
         qualifier = SQLSourceQualifier(userProvidedAlias: alias)
+    }
+    
+    /// Returns a qualified column that is able to resolve ambiguities in
+    /// joined queries.
+    public subscript(_ column: Column) -> Column {
+        return Column(column.name, qualifier: qualifier)
     }
 }
 

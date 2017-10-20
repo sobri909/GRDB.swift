@@ -350,7 +350,7 @@ class HasOneThroughIncludingRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase
                     .including(required: Country.continent
                         .identified(by: continentRef)
                         .filter(Column("name") != "America"))
-                    .order(Column("name").from("a"))
+                    .order(continentRef[Column("name")])
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
                     FROM "countries" \
@@ -367,7 +367,7 @@ class HasOneThroughIncludingRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase
                     .including(required: Country.continent
                         .order(Column("name"))
                         .identified(by: continentRef))
-                    .filter(Column("name").from("a") != "America")
+                    .filter(continentRef[Column("name")] != "America")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
                     FROM "countries" \

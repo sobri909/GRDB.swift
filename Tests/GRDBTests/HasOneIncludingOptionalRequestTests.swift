@@ -250,7 +250,7 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
                     .including(optional: Country.profile
                         .identified(by: profileRef)
                         .filter(Column("currency") == "EUR"))
-                    .order(Column("area").from("a"))
+                    .order(profileRef[Column("area")])
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
                     FROM "countries" \
@@ -266,7 +266,7 @@ class HasOneIncludingOptionalRequestTests: GRDBTestCase {
                     .including(optional: Country.profile
                         .order(Column("area"))
                         .identified(by: profileRef))
-                    .filter(Column("currency").from("a") == "EUR")
+                    .filter(profileRef[Column("currency")] == "EUR")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "a".* \
                     FROM "countries" \
