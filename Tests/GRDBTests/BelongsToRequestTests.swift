@@ -91,14 +91,16 @@ class BelongsToRequestTests: GRDBTestCase {
             do {
                 // alias first
                 let book = try Book.fetchOne(db, key: 1)!
-                let request = book.request(Book.author.aliased("a"))
+                let authorRef = TableReference(alias: "a")
+                let request = book.request(Book.author.identified(by: authorRef))
                 try assertEqualSQL(db, request, "SELECT \"a\".* FROM \"authors\" \"a\" WHERE (\"a\".\"id\" = 2)")
             }
             
             do {
                 // alias last
                 let book = try Book.fetchOne(db, key: 1)!
-                let request = book.request(Book.author).aliased("a")
+                let authorRef = TableReference(alias: "a")
+                let request = book.request(Book.author).identified(by: authorRef)
                 try assertEqualSQL(db, request, "SELECT \"a\".* FROM \"authors\" \"a\" WHERE (\"a\".\"id\" = 2)")
             }
         }

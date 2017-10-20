@@ -70,7 +70,7 @@ public protocol RequestDerivable {
     func limit(_ limit: Int, offset: Int?) -> Self
     
     /// TODO
-    func aliased(_ alias: String) -> Self
+    func identified(by reference: TableReference) -> Self
 }
 
 extension RequestDerivable {
@@ -227,7 +227,7 @@ extension RequestDerivableWrapper {
     }
     
     /// TODO
-    public func aliased(_ alias: String) -> Self {
-        return mapRequest { $0.aliased(alias) }
+    public func identified(by reference: TableReference) -> Self {
+        return mapRequest { $0.identified(by: reference) }
     }
 }

@@ -261,38 +261,41 @@ class HasOneThroughIncludingRequiredRequest_HasOne_BelongsTo_Tests: GRDBTestCase
         try dbQueue.inDatabase { db in
             do {
                 // alias first
+                let countryRef = TableReference(alias: "a")
                 let request = Country.all()
-                    .aliased("c")
+                    .identified(by: countryRef)
                     .filter(Column("code") != "DE")
                     .including(required: Country.continent)
                 try assertEqualSQL(db, request, """
-                    SELECT "c".*, "continents".* \
-                    FROM "countries" "c" \
-                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
+                    SELECT "a".*, "continents".* \
+                    FROM "countries" "a" \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "a"."code") \
                     JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
-                    WHERE ("c"."code" <> 'DE')
+                    WHERE ("a"."code" <> 'DE')
                     """)
             }
             
             do {
                 // alias last
+                let countryRef = TableReference(alias: "a")
                 let request = Country
                     .filter(Column("code") != "DE")
                     .including(required: Country.continent)
-                    .aliased("c")
+                    .identified(by: countryRef)
                 try assertEqualSQL(db, request, """
-                    SELECT "c".*, "continents".* \
-                    FROM "countries" "c" \
-                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "c"."code") \
+                    SELECT "a".*, "continents".* \
+                    FROM "countries" "a" \
+                    JOIN "countryProfiles" ON ("countryProfiles"."countryCode" = "a"."code") \
                     JOIN "continents" ON ("continents"."id" = "countryProfiles"."continentId") \
-                    WHERE ("c"."code" <> 'DE')
+                    WHERE ("a"."code" <> 'DE')
                     """)
             }
             
             do {
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
+                let countryRef = TableReference(alias: "countries")
                 let request = Country.all()
-                    .aliased("countries")
+                    .identified(by: countryRef)
                     .including(required: Country.continent)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".*, "continents".* \

@@ -158,7 +158,8 @@ class HasOneThroughRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias first
                 let book = try Book.fetchOne(db, key: "book1")!
-                let request = book.request(Book.libraryAddress.aliased("a"))
+                let addressRef = TableReference(alias: "a")
+                let request = book.request(Book.libraryAddress.identified(by: addressRef))
                 try assertEqualSQL(db, request, """
                     SELECT "a".* \
                     FROM "libraryAddresses" "a" \
@@ -169,7 +170,8 @@ class HasOneThroughRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias last
                 let book = try Book.fetchOne(db, key: "book1")!
-                let request = book.request(Book.libraryAddress).aliased("a")
+                let addressRef = TableReference(alias: "a")
+                let request = book.request(Book.libraryAddress).identified(by: addressRef)
                 try assertEqualSQL(db, request, """
                     SELECT "a".* \
                     FROM "libraryAddresses" "a" \

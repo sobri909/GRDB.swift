@@ -142,11 +142,10 @@ extension QueryInterfaceRequest : RequestDerivable {
     }
     
     /// TODO
-    public func aliased(_ alias: String) -> QueryInterfaceRequest {
-        var qualifier = SQLSourceQualifier()
-        let query = self.query.qualified(by: &qualifier)
-        qualifier.alias = alias
-        qualifier.userProvided = true
+    public func identified(by reference: TableReference) -> QueryInterfaceRequest {
+        let userProvidedAlias = reference.userProvidedAlias
+        let query = self.query.qualified(by: &reference.qualifier)
+        reference.userProvidedAlias = userProvidedAlias // Allow user to explicitely rename (TODO: test)
         return QueryInterfaceRequest(query: query)
     }
 }

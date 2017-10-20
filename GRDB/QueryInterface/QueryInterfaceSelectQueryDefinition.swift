@@ -423,15 +423,51 @@ struct SQLSource {
     }
 }
 
+// TODO
+public class TableReference {
+    var qualifier: SQLSourceQualifier
+    
+    var userProvidedAlias: String? {
+        get { return qualifier.userProvidedAlias }
+        set {
+            if let value = newValue {
+                qualifier.alias = newValue
+                qualifier.userProvided = true
+            }
+        }
+    }
+    
+    // TODO
+    public init() {
+        qualifier = SQLSourceQualifier()
+    }
+    
+    // TODO
+    public init(alias: String) {
+        qualifier = SQLSourceQualifier(userProvidedAlias: alias)
+    }
+}
+
 /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
 public class SQLSourceQualifier {
     var tableName: String?
     var alias: String?
-    var userProvided = false
+    var userProvided: Bool
     
     init() {
         self.tableName = nil
         self.alias = nil
+        self.userProvided = false
+    }
+    
+    init(userProvidedAlias alias: String) {
+        self.tableName = nil
+        self.alias = alias
+        self.userProvided = true
+    }
+    
+    var userProvidedAlias: String? {
+        return userProvided ? alias : nil
     }
     
     var qualifiedName: String? {
