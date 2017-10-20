@@ -431,7 +431,7 @@ public class TableReference {
         get { return qualifier.userProvidedAlias }
         set {
             if let value = newValue {
-                qualifier.alias = newValue
+                qualifier.alias = value
                 qualifier.userProvided = true
             }
         }
