@@ -535,15 +535,11 @@ struct Book: TableMapping, RowConvertible {
     ...
 }
 
-try dbQueue.inDatabase { db in
-    let request = Book.including(optional: Book.author)
-    // [(left: Book, right: Author?)]
-    let pairs = try request.fetchAll(db)
-    
-    let request = Book.including(required: Book.author)
-    // [(left: Book, right: Author)]
-    let pairs = try request.fetchAll(db)
-}
+let request = Book.including(optional: Book.author)
+let pairs = try request.fetchAll(db) // [(left: Book, right: Author?)]
+
+let request = Book.including(required: Book.author)
+let pairs = try request.fetchAll(db) // [(left: Book, right: Author)]
 ```
 
 Both requests fetch associated pairs made of a book and its author. The `optional` variant may return books without author (those that don't have any author in the database), whereas the `required` variant only returns books that have an author. You'll choose one or the other, depending on your database schema, and how you intend to process the fetched pairs.
@@ -551,74 +547,118 @@ Both requests fetch associated pairs made of a book and its author. The `optiona
 You fetch all associated pairs as an Array with `fetchAll`, as a [cursor] with `fetchCursor`, and you fetch the first one with `fetchOne`. See [Fetching Methods](https://github.com/groue/GRDB.swift/blob/master/README.md#fetching-methods) for more information:
 
 ```swift
-try dbQueue.inDatabase { db in
-    let request = Book.including(required: Book.author)
-    try request.fetchCursor(db) // A cursor of (Book, Author)
-    try request.fetchAll(db)    // [(Book, Author)]
-    try request.fetchOne(db)    // (Book, Author)?
-}
+let request = Book.including(required: Book.author)
+try request.fetchCursor(db) // A cursor of (Book, Author)
+try request.fetchAll(db)    // [(Book, Author)]
+try request.fetchOne(db)    // (Book, Author)?
 ```
 
-##### Filtering, Ordering, Aliasing
+##### Filtering and Ordering
 
 The request returned by `including()` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter`, `order` or `limit` methods:
 
 ```swift
 // The ten cheapest thrillers, with their eventual author:
-try dbQueue.inDatabase { db in
-    let request = Book
-        .including(optional: Book.author)
-        .filter(Column("genre") == "Thriller")
-        .order(Column("price"))
-        .limit(10)
-    
-    // [(Book, Author?)]
-    let pairs = try request.fetchAll(db)
-}
+let request = Book
+    .including(optional: Book.author) // <- include author
+    .filter(Column("genre") == "Thriller")
+    .order(Column("price"))
+    .limit(10)
 
-// TODO: introduce this example later
-// The ten most recent books written by a French author:
-try dbQueue.inDatabase { db in
-    let frenchAuthors = Book
-        .author
-        .filter(Column("country") == "France")
-    let request = Book
-        .including(required: frenchAuthors)
-        .order(Column("year").desc)
-        .limit(10)
-    
-    // [(Book, Author)]
-    let pairs = try request.fetchAll(db)
-}
+// [(Book, Author?)]
+let pairs = try request.fetchAll(db)
 ```
 
-The association can be included at any point. The code snippet below returns the same result:
+The association can be included at any point. The request above is equivalent to the request below:
 
 ```swift
-// The ten cheapest thrillers, with their author:
-try dbQueue.inDatabase { db in
-    let thrillersRequest = Book
-        .filter(Column("genre") == "Thriller")
-        .order(Column("price"))
-        .limit(10)
-        
-    // [(Book, Author)] or [(Book, Author?)]
-    let pairs = thrillersRequest
-        .including(Book.author) // <- include author
-        .fetchAll(db)
-}
+let thrillersRequest = Book
+    .filter(Column("genre") == "Thriller")
+    .order(Column("price"))
+    .limit(10)
+
+let request = thrillersRequest.including(Book.author) // <- include author
 ```
 
-In the previous example, the `thrillersRequest` is a valid fetch request for books. You can fetch books from it:
+Now the `thrillersRequest` itself was a valid request for books:
 
 ```swift
-// The ten cheapest thrillers:
+// The ten cheapest thrillers (without author)
 let books = try thrillersRequest.fetchAll(db)
 ```
 
-*This means that eventual filtering or ordering apply to the main record, not to the included records.* To filter the included records, or order the results according to the included records, you need to be explicit:
+This also means that the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers were applying on books, not on authors. Even if the "authors" database table has columns named "genre" or "price".
 
-TODO
+You can still apply filtering of author columns, though. One way to do this is by filtering the association itself:
+
+```swift
+// The ten most recent books written by a French author:
+let frenchAuthors = Book.author
+    .filter(Column("country") == "France")
+
+let request = Book
+    .order(Column("year").desc)
+    .including(required: frenchAuthors)
+    .limit(10)
+
+// [(Book, Author)]
+let pairs = try request.fetchAll(db)
+```
+
+Sometimes conditions involve both tables. For example, to load posthumously published books, we'll have to compare columns from both tables: the book's publishing date, and the author's death date.
+
+Let's first show a wrong way to do it:
+
+```swift
+// ERROR: No such column books.deathDate
+let posthumousRequest = Book
+    .including(required: Book.author)
+    .filter(Column("publishingDate") > Column("deathDate"))
+```
+
+To understand this error, remember that columns involved in `Book.filter` are always book columns, and that columns involved in `Book.author.filter` are always author columns. Here we have been trying to use a non-existing `deathDate` book column, and this ends with an error.
+
+To match columns from various tables, we need *table references*. The role of table references is to override the strict column attribution rules we have just explained.
+
+To achieve our goal of loading posthumous books, we need one table reference that will break the attribution rule for the `deathDate` column, and avoid the "No such column books.deathDate" error. We need a reference to the authors table:
+
+```swift
+let authorRef = TableReference()
+```
+
+To activate the table reference, attach it to the author association:
+
+```swift
+let authorRef = TableReference()
+let posthumousRequest = Book
+    .including(required: Book.author.identified(by: authorRef))
+    ...
+```
+
+And replace `Column("deathDate")` with `authorRef[Column("deathDate")]`:
+
+```swift
+let authorRef = TableReference()
+slet posthumousRequest = Book
+    .including(required: Book.author.identified(by: authorRef))
+    .filter(Column("publishingDate") > authorRef[Column("deathDate")])
+
+// The posthumous books: [(Book, Author)]
+let pairs = try request.fetchAll(db)
+```
+
+Table references will also help you sorting associated pairs by author columns:
+
+```swift
+// The books with their eventual author, ordered by author name:
+let authorRef = TableReference()
+let request = Book
+    .including(required: Book.author.identified(by: authorRef))
+    .order(authorRef[Column("name")])
+
+// [(Book, Author)]
+let pairs = try request.fetchAll(db)
+```
 
 ---
 
