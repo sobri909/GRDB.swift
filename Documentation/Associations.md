@@ -560,7 +560,7 @@ The request returned by `including()` can be further refined just like other [Qu
 ```swift
 // The ten cheapest thrillers, with their eventual author:
 let request = Book
-    .including(optional: Book.author) // <- include author
+    .including(optional: Book.author)
     .filter(Column("genre") == "Thriller")
     .order(Column("price"))
     .limit(10)
@@ -577,19 +577,12 @@ let thrillersRequest = Book
     .order(Column("price"))
     .limit(10)
 
-let request = thrillersRequest.including(Book.author) // <- include author
+let request = thrillersRequest.including(optional: Book.author)
 ```
 
-Now the `thrillersRequest` itself was a valid request for books:
+We may see from the example above that the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers were applying on books, not on authors. Even if the "authors" database table has columns named "genre" or "price".
 
-```swift
-// The ten cheapest thrillers (without author)
-let books = try thrillersRequest.fetchAll(db)
-```
-
-This also means that the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers were applying on books, not on authors. Even if the "authors" database table has columns named "genre" or "price".
-
-You can still apply filtering of author columns, though. One way to do this is by filtering the association itself:
+It is possible to filter on author columns, though. One way to do this is by filtering the association itself:
 
 ```swift
 // The ten most recent books written by a French author:
