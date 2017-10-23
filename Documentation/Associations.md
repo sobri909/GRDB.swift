@@ -488,13 +488,7 @@ The *BelongsTo* association sets up a one-to-one connection from a record type t
 
 ### Declaring the BelongsTo Association
 
-To declare a *BelongsTo* association, you use one of those static methods:
-
-- `belongsTo(_:using:)`
-
-The first argument is the type of the targetted record. It must adopt the [TableMapping] protocol. It will often adopt the [RowConvertible] protocol as well, so that you can fetch it from association-based requests.
-
-The `using:` argument is a foreign key that is only necessary when GRDB can't automatically infer the columns that supports the association from the database schema (see [Associations and the Database Schema](#associations-and-the-database-schema)).
+To declare a *BelongsTo* association from record Book to record Author, you use the `Book.belongsTo(_:using:)` static method.
 
 For example:
 
@@ -509,15 +503,21 @@ struct Author: TableMapping {
 }
 ```
 
+The first argument of the `belongsTo(_:using:)` method is the type of the targetted record: Author. It must adopt the [TableMapping] protocol. It will often adopt the [RowConvertible] protocol as well, so that you can fetch it from association-based requests.
+
+The `using:` argument is a foreign key that is only necessary when GRDB can't automatically infer the columns that supports the association from the database schema (see [Associations and the Database Schema](#associations-and-the-database-schema)).
+
 
 ### Using the BelongsTo Association
 
-The *BelongsTo* association adds static and instance methods to the declaring record:
+The *BelongsTo* association feeds the following static and instance methods:
 
-- `Record.including(optional:)`
-- `Record.including(required:)`
-- `Record.joining(optional:)`
-- `Record.joining(required:)`
+- [BelongsTo `including` Requests](#belongsto-including-requests):
+    - `Record.including(optional:)`
+    - `Record.including(required:)`
+- [BelongsTo `joining` Requests](#belongsto-joining-requests):
+    - `Record.joining(optional:)`
+    - `Record.joining(required:)`
 - `record.fetchOne(_:_:)`
 
 
@@ -742,6 +742,9 @@ Book.referenced(by: bookRef)
     .including(required: Book.author.referenced(by: authorRef))
     .filter(sql: "b.publishingDate > a.deathDate")
 ```
+
+
+### BelongsTo `joining` Requests
 
 
 [cursor]: https://github.com/groue/GRDB.swift/blob/master/README.md#cursors
