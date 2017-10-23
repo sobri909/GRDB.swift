@@ -482,20 +482,20 @@ public class SQLSourceQualifier {
 }
 
 extension Array where Iterator.Element == SQLSourceQualifier {
+    /// Resolve ambiguities in qualifiers' names.
+    ///
+    /// Precondition: all qualifiers have a non-nil qualifiedName:
+    ///
+    ///     var qualifier = SQLSourceQualifier() // nil qualifiedName
+    ///     let query = query.qualified(by: &leftQualifier)
+    ///     // Now qualifier is guaranteed to have a non-nil qualifiedName.
     func resolveAmbiguities() throws {
-        var groups: [String: [SQLSourceQualifier]] = [:]
-        for qualifier in self {
-            let qualifiedName = qualifier.qualifiedName! // qualifier must have been given a table name by now
-            let lowercaseName = qualifiedName.lowercased()
-            // TODO: enhance once SE-0165 has shipped
-            if groups[lowercaseName] != nil {
-                groups[lowercaseName]!.append(qualifier)
-            } else {
-                groups[lowercaseName] = [qualifier]
-            }
-        }
+        // It is a programmer error to reuse the same (===) TableReference for
+        // multiple tables.
+        GRDBPrecondition(count == Set(map { Unmanaged.passUnretained($0).toOpaque() }).count, "A TableReference most not be used to refer to multiple tables")
         
-        // TODO: fatal error if a two qualifiers are the same (===)
+        // Group qualifiers by lowercase name
+        let groups = Dictionary.init(grouping: self) { $0.qualifiedName!.lowercased() }
         
         var uniqueNames: Set<String> = []
         var ambiguousGroups: [[SQLSourceQualifier]] = []
@@ -503,10 +503,8 @@ extension Array where Iterator.Element == SQLSourceQualifier {
         for (lowercaseName, group) in groups {
             if group.count > 1 {
                 if group.filter({ $0.userProvided }).count >= 2 {
-                    // TODO: shouldn't this be a fatal error?
-                    // For the yes: conflicting aliases are clearly a programmer error: somebody did provide conflicting aliases.
-                    // For the no: conflicting aliases do not throw a fatal error when they are embedded in a raw SQL query.
-                    throw DatabaseError(message: "ambiguous alias: \(group[0].qualifiedName!)")
+                    // Ambiguity comes from user-provided aliases.
+                    fatalError("ambiguous alias: \(group[0].qualifiedName!)")
                 }
                 ambiguousGroups.append(group)
             } else {

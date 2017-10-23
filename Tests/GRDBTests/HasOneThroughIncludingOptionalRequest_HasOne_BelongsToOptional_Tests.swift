@@ -442,24 +442,4 @@ class HasOneThroughIncludingOptionalRequest_HasOne_BelongsToOptional_Tests: GRDB
             }
         }
     }
-    
-    func testConflictingAlias() throws {
-        let dbQueue = try makeDatabaseQueue()
-        try HasOneThrough_HasOne_BelongsTo_Fixture().migrator.migrate(dbQueue)
-        
-        try dbQueue.inDatabase { db in
-            do {
-                let countryRef = TableReference(alias: "A")
-                let continentRef = TableReference(alias: "a")
-                let request = Country.including(optional: Country.continent.referenced(by: continentRef)).referenced(by: countryRef)
-                _ = try request.fetchAll(db)
-                XCTFail("Expected error")
-            } catch let error as DatabaseError {
-                XCTAssertEqual(error.resultCode, .SQLITE_ERROR)
-                XCTAssertEqual(error.message!, "ambiguous alias: A")
-                XCTAssertNil(error.sql)
-                XCTAssertEqual(error.description, "SQLite error 1: ambiguous alias: A")
-            }
-        }
-    }
 }

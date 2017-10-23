@@ -335,24 +335,4 @@ class BelongsToJoinedOptionalRequestTests: GRDBTestCase {
             }
         }
     }
-    
-    func testConflictingAlias() throws {
-        let dbQueue = try makeDatabaseQueue()
-        try AssociationFixture().migrator.migrate(dbQueue)
-        
-        try dbQueue.inDatabase { db in
-            do {
-                let bookRef = TableReference(alias: "A")
-                let authorRef = TableReference(alias: "a")
-                let request = Book.joining(optional: Book.author.referenced(by: authorRef)).referenced(by: bookRef)
-                _ = try request.fetchAll(db)
-                XCTFail("Expected error")
-            } catch let error as DatabaseError {
-                XCTAssertEqual(error.resultCode, .SQLITE_ERROR)
-                XCTAssertEqual(error.message!, "ambiguous alias: A")
-                XCTAssertNil(error.sql)
-                XCTAssertEqual(error.description, "SQLite error 1: ambiguous alias: A")
-            }
-        }
-    }
 }

@@ -304,24 +304,4 @@ class HasOneJoinedOptionalRequestTests: GRDBTestCase {
             }
         }
     }
-    
-    func testConflictingAlias() throws {
-        let dbQueue = try makeDatabaseQueue()
-        try AssociationFixture().migrator.migrate(dbQueue)
-        
-        try dbQueue.inDatabase { db in
-            do {
-                let countryRef = TableReference(alias: "A")
-                let profileRef = TableReference(alias: "a")
-                let request = Country.joining(optional: Country.profile.referenced(by: profileRef)).referenced(by: countryRef)
-                _ = try request.fetchAll(db)
-                XCTFail("Expected error")
-            } catch let error as DatabaseError {
-                XCTAssertEqual(error.resultCode, .SQLITE_ERROR)
-                XCTAssertEqual(error.message!, "ambiguous alias: A")
-                XCTAssertNil(error.sql)
-                XCTAssertEqual(error.description, "SQLite error 1: ambiguous alias: A")
-            }
-        }
-    }
 }
