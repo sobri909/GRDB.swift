@@ -497,18 +497,16 @@ extension Array where Iterator.Element == SQLSourceQualifier {
         // Group qualifiers by lowercase name
         let groups = Dictionary.init(grouping: self) { $0.qualifiedName!.lowercased() }
         
-        var uniqueNames: Set<String> = []
+        var uniqueLowercaseNames: Set<String> = []
         var ambiguousGroups: [[SQLSourceQualifier]] = []
         
         for (lowercaseName, group) in groups {
             if group.count > 1 {
-                if group.filter({ $0.userProvided }).count >= 2 {
-                    // Ambiguity comes from user-provided aliases.
-                    fatalError("ambiguous alias: \(group[0].qualifiedName!)")
-                }
+                // It is a programmer error to reuse the same alias for multiple tables
+                GRDBPrecondition(group.filter({ $0.userProvided }).count < 2, "ambiguous alias: \(group[0].qualifiedName!)")
                 ambiguousGroups.append(group)
             } else {
-                uniqueNames.insert(lowercaseName)
+                uniqueLowercaseNames.insert(lowercaseName)
             }
         }
         
@@ -521,8 +519,8 @@ extension Array where Iterator.Element == SQLSourceQualifier {
                 repeat {
                     alias = "\(radical)\(index)"
                     index += 1
-                } while uniqueNames.contains(alias.lowercased())
-                uniqueNames.insert(alias.lowercased())
+                } while uniqueLowercaseNames.contains(alias.lowercased())
+                uniqueLowercaseNames.insert(alias.lowercased())
                 qualifier.alias = alias
             }
         }
