@@ -641,7 +641,7 @@ And replace `Column("deathDate")` with `authorRef[Column("deathDate")]`:
 
 ```swift
 let authorRef = TableReference()
-slet posthumousRequest = Book
+let posthumousRequest = Book
     .including(required: Book.author.referenced(by: authorRef))
     .filter(Column("publishingDate") > authorRef[Column("deathDate")])
 
