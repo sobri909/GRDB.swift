@@ -569,7 +569,7 @@ let request = Book
 let pairs = try request.fetchAll(db)
 ```
 
-The association can be included at any point. The request above is equivalent to the request below:
+The association can be included at any point, before or after filters and orderings. In the code below, the association is included last, in order to decorate a plain book request:
 
 ```swift
 let thrillersRequest = Book
@@ -577,10 +577,17 @@ let thrillersRequest = Book
     .order(Column("price"))
     .limit(10)
 
-let request = thrillersRequest.including(optional: Book.author)
+// [Book]
+let books = try thrillersRequest
+    .fetchAll(db)
+
+// [(Book, Author?)]
+let pairs = try thrillersRequest
+    .including(optional: Book.author)
+    .fetchAll(db)
 ```
 
-We may see from the example above that the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers were applying on books, not on authors. Even if the "authors" database table has columns named "genre" or "price".
+In both examples above, the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers above apply on books, not on authors. Even if the "authors" database table also has columns named "genre" or "price".
 
 It is possible to filter on author columns, though. One way to do this is by filtering the association itself:
 
@@ -609,9 +616,9 @@ let posthumousRequest = Book
     .filter(Column("publishingDate") > Column("deathDate"))
 ```
 
-To understand this error, remember that columns involved in `Book.filter` are always book columns, and that columns involved in `Book.author.filter` are always author columns. Here we have been trying to use a non-existing `deathDate` book column, and this ends with an error.
+To understand this error, remember that columns involved in `Book.filter` are always book columns, and that columns involved in `Book.author.filter` are always author columns. *Those are the default colum attribution rules*. Here we have been trying to use a non-existing `deathDate` book column, and this ends with an error.
 
-To match columns from various tables, we need *table references*. The role of table references is to override the strict column attribution rules we have just explained.
+To match columns from various tables, we need *table references*. The role of table references is to override the default column attribution rules we have just explained.
 
 To achieve our goal of loading posthumous books, we need one table reference that will break the attribution rule for the `deathDate` column, and avoid the "No such column books.deathDate" error. We need a reference to the authors table:
 
@@ -643,11 +650,12 @@ let pairs = try request.fetchAll(db)
 Table references will also help you sorting associated pairs by author columns:
 
 ```swift
-// The books with their eventual author, ordered by author name:
+// The books with their eventual author, ordered by author name and then
+// by publishing date:
 let authorRef = TableReference()
 let request = Book
     .including(required: Book.author.identified(by: authorRef))
-    .order(authorRef[Column("name")])
+    .order(authorRef[Column("name")], Column("publishingDate"))
 
 // [(Book, Author)]
 let pairs = try request.fetchAll(db)
