@@ -486,7 +486,7 @@ The following sections give the details of each type of association, including t
 The *BelongsTo* association sets up a one-to-one connection from a record type to another record type. In database terms, this association says that the record type that declares the association contains the foreign key. If the other record contains the foreign key, then you should use *HasOne* instead.
 
 
-### Declaring the Association
+### Declaring the BelongsTo Association
 
 To declare a *BelongsTo* association, you use one of those static methods:
 
@@ -510,7 +510,7 @@ struct Author: TableMapping {
 ```
 
 
-### Using the Association
+### Using the BelongsTo Association
 
 The *BelongsTo* association adds static and instance methods to the declaring record:
 
@@ -521,9 +521,9 @@ The *BelongsTo* association adds static and instance methods to the declaring re
 - `record.fetchOne(_:_:)`
 
 
-#### `Record.including(optional:)`, `Record.including(required:)`
+### BelongsTo `including` Requests
 
-The `including()` static methods return a request that fetches all associated pairs as Swift tuples:
+The `including()` static method returns a request that fetches all associated pairs as Swift tuples:
 
 ```swift
 struct Author: TableMapping, RowConvertible {
@@ -535,9 +535,11 @@ struct Book: TableMapping, RowConvertible {
     ...
 }
 
+// All books with their eventual author
 let request = Book.including(optional: Book.author)
 let pairs = try request.fetchAll(db) // [(left: Book, right: Author?)]
 
+// All books with their author
 let request = Book.including(required: Book.author)
 let pairs = try request.fetchAll(db) // [(left: Book, right: Author)]
 ```
@@ -548,12 +550,12 @@ You fetch all associated pairs as an Array with `fetchAll`, as a [cursor] with `
 
 ```swift
 let request = Book.including(required: Book.author)
-try request.fetchCursor(db) // A cursor of (Book, Author)
-try request.fetchAll(db)    // [(Book, Author)]
-try request.fetchOne(db)    // (Book, Author)?
+try request.fetchCursor(db) // A cursor of (left: Book, right: Author)
+try request.fetchAll(db)    // [(left: Book, right: Author)]
+try request.fetchOne(db)    // (left: Book, right: Author)?
 ```
 
-##### Filtering and Ordering
+#### Refining the BelongsTo `including` Requests
 
 The request returned by `including()` can be further refined just like other [Query Interface Requests](https://github.com/groue/GRDB.swift/blob/master/README.md#requests) with the `filter`, `order` or `limit` methods:
 
@@ -565,7 +567,7 @@ let request = Book
     .order(Column("price"))
     .limit(10)
 
-// [(Book, Author?)]
+// [(left: Book, right: Author?)]
 let pairs = try request.fetchAll(db)
 ```
 
@@ -581,13 +583,13 @@ let thrillersRequest = Book
 let books = try thrillersRequest
     .fetchAll(db)
 
-// [(Book, Author?)]
+// [(left: Book, right: Author?)]
 let pairs = try thrillersRequest
     .including(optional: Book.author)
     .fetchAll(db)
 ```
 
-In both examples above, the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers above apply on books, not on authors. Even if the "authors" database table also has columns named "genre" or "price".
+In both examples above, the `.filter(Column("genre") == "Thriller")` and `.order(Column("price"))` modifiers apply on books, not on authors. Even if the "authors" database table also has columns named "genre" or "price".
 
 It is possible to filter on author columns, though. One way to do this is by filtering the association itself:
 
@@ -601,7 +603,7 @@ let request = Book
     .including(required: frenchAuthors)
     .limit(10)
 
-// [(Book, Author)]
+// [(left: Book, right: Author)]
 let pairs = try request.fetchAll(db)
 ```
 
@@ -631,7 +633,7 @@ To activate the table reference, attach it to the author association:
 ```swift
 let authorRef = TableReference()
 let posthumousRequest = Book
-    .including(required: Book.author.identified(by: authorRef))
+    .including(required: Book.author.referenced(by: authorRef))
     ...
 ```
 
@@ -640,10 +642,10 @@ And replace `Column("deathDate")` with `authorRef[Column("deathDate")]`:
 ```swift
 let authorRef = TableReference()
 slet posthumousRequest = Book
-    .including(required: Book.author.identified(by: authorRef))
+    .including(required: Book.author.referenced(by: authorRef))
     .filter(Column("publishingDate") > authorRef[Column("deathDate")])
 
-// The posthumous books: [(Book, Author)]
+// The posthumous books: [(left: Book, right: Author)]
 let pairs = try request.fetchAll(db)
 ```
 
@@ -654,11 +656,91 @@ Table references will also help you sorting associated pairs by author columns:
 // by publishing date:
 let authorRef = TableReference()
 let request = Book
-    .including(required: Book.author.identified(by: authorRef))
+    .including(required: Book.author.referenced(by: authorRef))
     .order(authorRef[Column("name")], Column("publishingDate"))
 
-// [(Book, Author)]
+// [(left: Book, right: Author)]
 let pairs = try request.fetchAll(db)
+```
+
+
+#### BelongsTo `including` Requests and SQL
+
+The `including(optional:)` and `including(required:)` static methods build SQL requests that look like:
+
+```swift
+// SELECT books.*, authors.*           -- 1
+// FROM books
+// LEFT JOIN authors                   -- 2
+//     ON books.authorId = authors.id  -- 4
+Book.including(optional: Book.authors)
+
+// SELECT books.*, authors.*           -- 1
+// FROM books
+// JOIN authors                        -- 2
+//     ON books.authorId = authors.id  -- 3
+Book.including(required: Book.authors)
+```
+
+1. The `books.*, authors.*` selection is built from the `databaseTableName` and `databaseSelection` methods that both Book and Author implement as part of their adoption of the [TableMapping] protocol.
+2. Joining operators `LEFT JOIN` or `JOIN` directly come from the `optional` or `required` variants of the `including()` method.
+3. The foreign key used to join tables comes from the declaration of the `Book.author` association. See [Associations and the Database Schema](#associations-and-the-database-schema) for more information.
+
+Derived requests can add a `WHERE`, `ORDER BY` and `LIMIT` clause:
+
+```swift
+// SELECT books.*, authors.*
+// FROM books
+// LEFT JOIN authors ON books.authorId = authors.id
+// WHERE books.genre = 'Thriller'
+// ORDER BY books.price
+// LIMIT 10
+Book.including(optional: Book.author)
+    .filter(Column("genre") == "Thriller")
+    .order(Column("price"))
+    .limit(10)
+```
+
+Filtering the association itself extends the `ON` clause:
+
+```swift
+// SELECT books.*, authors.*
+// FROM books
+// JOIN authors
+//     ON books.authorId = authors.id
+//     AND authors.country = 'France'
+let request = Book
+    .including(required: Book
+        .author
+        .filter(Column("country") == "France"))
+```
+
+When joining a table with itself, GRDB generates unique table aliases:
+
+```swift
+struct Employee: TableMapping, RowConvertible {
+    static let manager = belongsTo(optional: Employee.self)
+}
+
+// SELECT employees1.*, employees2.*
+// FROM employees employees1
+// LEFT JOIN employees employees2
+//     ON employees1.managerId = employees2.id
+Employee.including(optional: Employee.manager)
+```
+
+You can force the name of a table alias with a TableReference:
+
+```swift
+// SELECT b.*, a.*
+// FROM books b
+// JOIN authors a ON b.authorId = a.id
+// WHERE b.publishingDate > a.deathDate
+let bookRef = TableReference(alias: "b")
+let authorRef = TableReference(alias: "a")
+Book.referenced(by: bookRef)
+    .including(required: Book.author.referenced(by: authorRef))
+    .filter(sql: "b.publishingDate > a.deathDate")
 ```
 
 ---
@@ -677,7 +759,7 @@ try dbQueue.inDatabase { db in
     let request = Book
         .including(frenchAuthors)
         .order(Column("title"))
-    let pairs = try request.fetchAll(db) // [(Book, Author)]
+    let pairs = try request.fetchAll(db) // [(left: Book, right: Author)]
 }
 ```
 
