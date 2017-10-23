@@ -93,7 +93,7 @@ class HasOneRequestTests: GRDBTestCase {
                 // alias first
                 let country = try Country.fetchOne(db, key: "FR")!
                 let profileRef = TableReference(alias: "a")
-                let request = country.request(Country.profile.identified(by: profileRef))
+                let request = country.request(Country.profile.referenced(by: profileRef))
                 try assertEqualSQL(db, request, "SELECT \"a\".* FROM \"countryProfiles\" \"a\" WHERE (\"a\".\"countryCode\" = 'FR')")
             }
             
@@ -101,7 +101,7 @@ class HasOneRequestTests: GRDBTestCase {
                 // alias last
                 let country = try Country.fetchOne(db, key: "FR")!
                 let profileRef = TableReference(alias: "a")
-                let request = country.request(Country.profile).identified(by: profileRef)
+                let request = country.request(Country.profile).referenced(by: profileRef)
                 try assertEqualSQL(db, request, "SELECT \"a\".* FROM \"countryProfiles\" \"a\" WHERE (\"a\".\"countryCode\" = 'FR')")
             }
         }

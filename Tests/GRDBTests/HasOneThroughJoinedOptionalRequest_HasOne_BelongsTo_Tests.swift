@@ -281,7 +281,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 // alias first
                 let countryRef = TableReference(alias: "a")
                 let request = Country.all()
-                    .identified(by: countryRef)
+                    .referenced(by: countryRef)
                     .filter(Column("code") != "DE")
                     .joining(optional: Country.continent)
                 try assertEqualSQL(db, request, """
@@ -299,7 +299,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 let request = Country
                     .filter(Column("code") != "DE")
                     .joining(optional: Country.continent)
-                    .identified(by: countryRef)
+                    .referenced(by: countryRef)
                 try assertEqualSQL(db, request, """
                     SELECT "a".* \
                     FROM "countries" "a" \
@@ -313,7 +313,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
                 let countryRef = TableReference(alias: "countries")
                 let request = Country.all()
-                    .identified(by: countryRef)
+                    .referenced(by: countryRef)
                     .joining(optional: Country.continent)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
@@ -332,7 +332,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let profileRef = TableReference(alias: "a")
-                let association = Country.hasOne(CountryProfile.continent, through: Country.profile.identified(by: profileRef))
+                let association = Country.hasOne(CountryProfile.continent, through: Country.profile.referenced(by: profileRef))
                 let request = Country.joining(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
@@ -344,7 +344,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias with table name
                 let profileRef = TableReference(alias: "countryProfiles")
-                let association = Country.hasOne(CountryProfile.continent, through: Country.profile.identified(by: profileRef))
+                let association = Country.hasOne(CountryProfile.continent, through: Country.profile.referenced(by: profileRef))
                 let request = Country.joining(optional: association)
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
@@ -366,7 +366,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 let profileRef = TableReference(alias: "a")
                 let request = Country
                     .joining(optional: Country.continent
-                        .identified(by: profileRef)
+                        .referenced(by: profileRef)
                         .filter(Column("name") != "America"))
                     .order(profileRef[Column("name")])
                 try assertEqualSQL(db, request, """
@@ -384,7 +384,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
                 let request = Country
                     .joining(optional: Country.continent
                         .order(Column("name"))
-                        .identified(by: profileRef))
+                        .referenced(by: profileRef))
                     .filter(profileRef[Column("name")] != "America")
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
@@ -398,7 +398,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias with table name (TODO: port this test to all testRightAlias() tests)
                 let profileRef = TableReference(alias: "continents")
-                let request = Country.joining(optional: Country.continent.identified(by: profileRef))
+                let request = Country.joining(optional: Country.continent.referenced(by: profileRef))
                 try assertEqualSQL(db, request, """
                     SELECT "countries".* \
                     FROM "countries" \
@@ -418,7 +418,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias left
                 let countryRef = TableReference(alias: "CONTINENTS") // Create name conflict
-                let request = Country.joining(optional: Country.continent).identified(by: countryRef)
+                let request = Country.joining(optional: Country.continent).referenced(by: countryRef)
                 try assertEqualSQL(db, request, """
                     SELECT "CONTINENTS".* \
                     FROM "countries" "CONTINENTS" \
@@ -430,7 +430,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 // alias right
                 let continentRef = TableReference(alias: "COUNTRIES") // Create name conflict
-                let request = Country.joining(optional: Country.continent.identified(by: continentRef))
+                let request = Country.joining(optional: Country.continent.referenced(by: continentRef))
                 try assertEqualSQL(db, request, """
                     SELECT "countries1".* \
                     FROM "countries" "countries1" \
@@ -449,7 +449,7 @@ class HasOneThroughJoinedOptionalRequest_HasOne_BelongsTo_Tests: GRDBTestCase {
             do {
                 let countryRef = TableReference(alias: "A")
                 let continentRef = TableReference(alias: "a")
-                let request = Country.joining(optional: Country.continent.identified(by: continentRef)).identified(by: countryRef)
+                let request = Country.joining(optional: Country.continent.referenced(by: continentRef)).referenced(by: countryRef)
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {

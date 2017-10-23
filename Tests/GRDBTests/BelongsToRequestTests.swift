@@ -92,7 +92,7 @@ class BelongsToRequestTests: GRDBTestCase {
                 // alias first
                 let book = try Book.fetchOne(db, key: 1)!
                 let authorRef = TableReference(alias: "a")
-                let request = book.request(Book.author.identified(by: authorRef))
+                let request = book.request(Book.author.referenced(by: authorRef))
                 try assertEqualSQL(db, request, "SELECT \"a\".* FROM \"authors\" \"a\" WHERE (\"a\".\"id\" = 2)")
             }
             
@@ -100,7 +100,7 @@ class BelongsToRequestTests: GRDBTestCase {
                 // alias last
                 let book = try Book.fetchOne(db, key: 1)!
                 let authorRef = TableReference(alias: "a")
-                let request = book.request(Book.author).identified(by: authorRef)
+                let request = book.request(Book.author).referenced(by: authorRef)
                 try assertEqualSQL(db, request, "SELECT \"a\".* FROM \"authors\" \"a\" WHERE (\"a\".\"id\" = 2)")
             }
         }

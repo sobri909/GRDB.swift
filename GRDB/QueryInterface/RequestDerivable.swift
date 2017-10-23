@@ -70,7 +70,7 @@ public protocol RequestDerivable {
     func limit(_ limit: Int, offset: Int?) -> Self
     
     /// TODO
-    func identified(by reference: TableReference) -> Self
+    func referenced(by reference: TableReference) -> Self
 }
 
 extension RequestDerivable {
@@ -227,7 +227,7 @@ extension RequestDerivableWrapper {
     }
     
     /// TODO
-    public func identified(by reference: TableReference) -> Self {
-        return mapRequest { $0.identified(by: reference) }
+    public func referenced(by reference: TableReference) -> Self {
+        return mapRequest { $0.referenced(by: reference) }
     }
 }

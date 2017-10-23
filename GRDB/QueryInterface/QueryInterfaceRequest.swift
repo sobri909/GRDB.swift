@@ -142,7 +142,7 @@ extension QueryInterfaceRequest : RequestDerivable {
     }
     
     /// TODO
-    public func identified(by reference: TableReference) -> QueryInterfaceRequest {
+    public func referenced(by reference: TableReference) -> QueryInterfaceRequest {
         let userProvidedAlias = reference.userProvidedAlias
         let query = self.query.qualified(by: &reference.qualifier)
         reference.userProvidedAlias = userProvidedAlias // Allow user to explicitely rename (TODO: test)

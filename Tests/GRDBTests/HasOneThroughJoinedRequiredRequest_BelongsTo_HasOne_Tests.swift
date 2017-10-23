@@ -291,7 +291,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 // alias first
                 let bookRef = TableReference(alias: "c")
                 let request = Book.all()
-                    .identified(by: bookRef)
+                    .referenced(by: bookRef)
                     .filter(Column("title") != "Walden")
                     .joining(required: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
@@ -309,7 +309,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 let request = Book
                     .filter(Column("title") != "Walden")
                     .joining(required: Book.libraryAddress)
-                    .identified(by: bookRef)
+                    .referenced(by: bookRef)
                 try assertEqualSQL(db, request, """
                     SELECT "c".* \
                     FROM "books" "c" \
@@ -323,7 +323,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 // alias with table name (TODO: port this test to all testLeftAlias() tests)
                 let bookRef = TableReference(alias: "books")
                 let request = Book.all()
-                    .identified(by: bookRef)
+                    .referenced(by: bookRef)
                     .joining(required: Book.libraryAddress)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -342,7 +342,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             do {
                 let libraryRef = TableReference(alias: "a")
-                let association = Book.hasOne(Library.address, through: Book.library.identified(by: libraryRef))
+                let association = Book.hasOne(Library.address, through: Book.library.referenced(by: libraryRef))
                 let request = Book.joining(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -354,7 +354,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias with table name
                 let libraryRef = TableReference(alias: "libraries")
-                let association = Book.hasOne(Library.address, through: Book.library.identified(by: libraryRef))
+                let association = Book.hasOne(Library.address, through: Book.library.referenced(by: libraryRef))
                 let request = Book.joining(required: association)
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -376,7 +376,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 let addressRef = TableReference(alias: "a")
                 let request = Book
                     .joining(required: Book.libraryAddress
-                        .identified(by: addressRef)
+                        .referenced(by: addressRef)
                         .filter(Column("city") != "Paris"))
                     .order(addressRef[Column("city")].desc)
                 try assertEqualSQL(db, request, """
@@ -394,7 +394,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
                 let request = Book
                     .joining(required: Book.libraryAddress
                         .order(Column("city").desc)
-                        .identified(by: addressRef))
+                        .referenced(by: addressRef))
                     .filter(addressRef[Column("city")] != "Paris")
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
@@ -408,7 +408,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias with table name (TODO: port this test to all testRightAlias() tests)
                 let addressRef = TableReference(alias: "libraryAddresses")
-                let request = Book.joining(required: Book.libraryAddress.identified(by: addressRef))
+                let request = Book.joining(required: Book.libraryAddress.referenced(by: addressRef))
                 try assertEqualSQL(db, request, """
                     SELECT "books".* \
                     FROM "books" \
@@ -428,7 +428,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias left
                 let bookRef = TableReference(alias: "LIBRARYADDRESSES") // Create name conflict
-                let request = Book.joining(required: Book.libraryAddress).identified(by: bookRef)
+                let request = Book.joining(required: Book.libraryAddress).referenced(by: bookRef)
                 try assertEqualSQL(db, request, """
                     SELECT "LIBRARYADDRESSES".* \
                     FROM "books" "LIBRARYADDRESSES" \
@@ -440,7 +440,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 // alias right
                 let addressRef = TableReference(alias: "BOOKS") // Create name conflict
-                let request = Book.joining(required: Book.libraryAddress.identified(by: addressRef))
+                let request = Book.joining(required: Book.libraryAddress.referenced(by: addressRef))
                 try assertEqualSQL(db, request, """
                     SELECT "books1".* \
                     FROM "books" "books1" \
@@ -459,7 +459,7 @@ class HasOneThroughJoinedRequiredRequest_BelongsTo_HasOne_Tests: GRDBTestCase {
             do {
                 let addressRef = TableReference(alias: "a")
                 let bookRef = TableReference(alias: "A")
-                let request = Book.joining(required: Book.libraryAddress.identified(by: addressRef)).identified(by: bookRef)
+                let request = Book.joining(required: Book.libraryAddress.referenced(by: addressRef)).referenced(by: bookRef)
                 _ = try request.fetchAll(db)
                 XCTFail("Expected error")
             } catch let error as DatabaseError {
