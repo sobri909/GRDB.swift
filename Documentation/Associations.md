@@ -672,7 +672,7 @@ The `including(optional:)` and `including(required:)` static methods build SQL r
 // SELECT books.*, authors.*           -- 1
 // FROM books
 // LEFT JOIN authors                   -- 2
-//     ON books.authorId = authors.id  -- 4
+//     ON books.authorId = authors.id  -- 3
 Book.including(optional: Book.authors)
 
 // SELECT books.*, authors.*           -- 1
@@ -743,51 +743,6 @@ Book.referenced(by: bookRef)
     .filter(sql: "b.publishingDate > a.deathDate")
 ```
 
----
-
-Filtering a non-optional association reduces the number of results, in order to fetch non-nil associated records:
-
-```swift
-struct Book: TableMapping, RowConvertible {
-    static let author = belongsTo(Author.self) // Non optional association
-    ...
-}
-
-// All books by French authors
-try dbQueue.inDatabase { db in
-    let frenchAuthors = Book.author.filter(Column("countryCode") == "FR")
-    let request = Book
-        .including(frenchAuthors)
-        .order(Column("title"))
-    let pairs = try request.fetchAll(db) // [(left: Book, right: Author)]
-}
-```
-
-Conversely, filtering an optional association does not reduce the number of results. Instead, more results have a nil associated record. TODO: this is bullshit. What can be the purpose of such a behavior? I know that LEFT JOIN works this way. But should associations do???
-
-
-#### `Record.join(_:)`
-
-- [ ] **TODO**
-
-
-#### `record.fetchOne(_:_:)`
-
-The `fetchOne(_:_:)` instance method fetches the associated record:
-
-```swift
-try dbQueue.inDatabase { db in
-    let book: Book = ...
-    let author = try book.fetchOne(db, Book.author) // Author?
-}
-```
-
-The fetched record is an optional even if the association has not been declared with the `optional:` variant.
-
-
-### Refining the Association
-
-- [ ] **TODO**
 
 [cursor]: https://github.com/groue/GRDB.swift/blob/master/README.md#cursors
 [migration]: https://github.com/groue/GRDB.swift/blob/master/README.md#migrations
