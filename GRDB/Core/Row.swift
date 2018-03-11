@@ -6,7 +6,7 @@ import Foundation
 #endif
 
 /// A database row.
-public final class Row : Equatable, Hashable, RandomAccessCollection, ExpressibleByDictionaryLiteral, CustomStringConvertible {
+public final class Row : Equatable, Hashable, RandomAccessCollection, ExpressibleByDictionaryLiteral, CustomStringConvertible, CustomDebugStringConvertible {
     let impl: RowImpl
     
     /// Unless we are producing a row array, we use a single row when iterating
@@ -483,7 +483,7 @@ extension Row {
     /// See https://github.com/groue/GRDB.swift/blob/master/README.md#joined-queries-support
     /// for more information.
     public subscript<Record: FetchableRecord>(_ scope: String) -> Record {
-        guard let scopedRow = scoped(on: scope) else {
+        guard let scopedRow = lookup(scope: scope) else {
             // Programmer error
             fatalError("no such scope: \(scope)")
         }
@@ -499,7 +499,7 @@ extension Row {
     /// See https://github.com/groue/GRDB.swift/blob/master/README.md#joined-queries-support
     /// for more information.
     public subscript<Record: FetchableRecord>(_ scope: String) -> Record? {
-        guard let scopedRow = scoped(on: scope), scopedRow.containsNonNullValue else {
+        guard let scopedRow = lookup(scope: scope), scopedRow.containsNonNullValue else {
             return nil
         }
         return Record(row: scopedRow)
@@ -510,7 +510,8 @@ extension Row {
     
     // MARK: - Scopes
     
-    var scopeNames: Set<String> {
+    /// The names of the available scoped rows
+    public var scopeNames: Set<String> {
         return impl.scopeNames
     }
     
@@ -541,10 +542,57 @@ extension Row {
         return impl.scoped(on: name)
     }
     
-    /// Returns a copy of the row, without any scoped row (if the row was fetched
-    /// with a row adapter that defines scopes).
+    /// Performs a breadth-first search of the scope, and return the eventually
+    /// found scoped row.
+    func lookup(scope name: String) -> Row? {
+        struct Node {
+            let row: Row
+            let scope: String
+        }
+        
+        func enqueue(row: Row, in fifo: inout [Node]) {
+            for scope in row.scopeNames {
+                let node = Node(row: row.scoped(on: scope)!, scope: scope)
+                fifo.append(node)
+            }
+        }
+        
+        var fifo: [Node] = []
+        enqueue(row: self, in: &fifo)
+        while !fifo.isEmpty {
+            let node = fifo.removeFirst()
+            if node.scope == name {
+                // found
+                return node.row
+            } else {
+                enqueue(row: node.row, in: &fifo)
+            }
+        }
+        
+        // not found
+        return nil
+    }
+    
+    /// Returns a copy of the row, without any scopes.
+    ///
+    /// This property can turn out useful when you want to test the content of
+    /// adapted rows, such as rows fetched from joined requests.
+    ///
+    ///     let row = ...
+    ///     // Failure because row equality tests for row scopes:
+    ///     XCTAssertEqual(row, ["id": 1, "name": "foo"])
+    ///     // Success:
+    ///     XCTAssertEqual(row.unscoped, ["id": 1, "name": "foo"])
     public var unscoped: Row {
         return Row(impl: ArrayRowImpl(columns: map { ($0, $1) }))
+    }
+    
+    /// Return the raw row fetched from the database.
+    ///
+    /// This property can turn out useful when you debug the consumption of
+    /// adapted rows, such as rows fetched from joined requests.
+    public var unadapted: Row {
+        return impl.unadaptedRow
     }
 }
 
@@ -719,6 +767,73 @@ extension Row {
     }
 }
 
+extension Row {
+    
+    // MARK: - Fetching From FetchRequest
+    
+    /// Returns a cursor over rows fetched from a fetch request.
+    ///
+    ///     let request = Player.all()
+    ///     let rows = try Row.fetchCursor(db, request) // RowCursor
+    ///     while let row = try rows.next() { // Row
+    ///         let id: Int64 = row["id"]
+    ///         let name: String = row["name"]
+    ///     }
+    ///
+    /// Fetched rows are reused during the cursor iteration: don't turn a row
+    /// cursor into an array with `Array(rows)` or `rows.filter { ... }` since
+    /// you would not get the distinct rows you expect. Use `Row.fetchAll(...)`
+    /// instead.
+    ///
+    /// For the same reason, make sure you make a copy whenever you extract a
+    /// row for later use: `row.copy()`.
+    ///
+    /// If the database is modified during the cursor iteration, the remaining
+    /// elements are undefined.
+    ///
+    /// The cursor must be iterated in a protected dispath queue.
+    ///
+    /// - parameters:
+    ///     - db: A database connection.
+    ///     - request: A FetchRequest.
+    /// - returns: A cursor over fetched rows.
+    /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
+    public static func fetchCursor<R: FetchRequest>(_ db: Database, _ request: R) throws -> RowCursor {
+        let (statement, adapter) = try request.prepare(db)
+        return try fetchCursor(statement, adapter: adapter)
+    }
+    
+    /// Returns an array of rows fetched from a fetch request.
+    ///
+    ///     let request = Player.all()
+    ///     let rows = try Row.fetchAll(db, request)
+    ///
+    /// - parameters:
+    ///     - db: A database connection.
+    ///     - request: A FetchRequest.
+    /// - returns: An array of rows.
+    /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
+    public static func fetchAll<R: FetchRequest>(_ db: Database, _ request: R) throws -> [Row] {
+        let (statement, adapter) = try request.prepare(db)
+        return try fetchAll(statement, adapter: adapter)
+    }
+    
+    /// Returns a single row fetched from a fetch request.
+    ///
+    ///     let request = Player.filter(key: 1)
+    ///     let row = try Row.fetchOne(db, request)
+    ///
+    /// - parameters:
+    ///     - db: A database connection.
+    ///     - request: A FetchRequest.
+    /// - returns: An optional row.
+    /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
+    public static func fetchOne<R: FetchRequest>(_ db: Database, _ request: R) throws -> Row? {
+        let (statement, adapter) = try request.prepare(db)
+        return try fetchOne(statement, adapter: adapter)
+    }
+}
+
 extension FetchRequest where RowDecoder: Row {
     
     // MARK: Fetching Rows
@@ -749,8 +864,7 @@ extension FetchRequest where RowDecoder: Row {
     /// - returns: A cursor over fetched rows.
     /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
     public func fetchCursor(_ db: Database) throws -> RowCursor {
-        let (statement, adapter) = try prepare(db)
-        return try Row.fetchCursor(statement, adapter: adapter)
+        return try Row.fetchCursor(db, self)
     }
     
     /// An array of fetched rows.
@@ -762,8 +876,7 @@ extension FetchRequest where RowDecoder: Row {
     /// - returns: An array of fetched rows.
     /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
     public func fetchAll(_ db: Database) throws -> [Row] {
-        let (statement, adapter) = try prepare(db)
-        return try Row.fetchAll(statement, adapter: adapter)
+        return try Row.fetchAll(db, self)
     }
     
     /// The first fetched row.
@@ -775,8 +888,7 @@ extension FetchRequest where RowDecoder: Row {
     /// - returns: A,n optional rows.
     /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
     public func fetchOne(_ db: Database) throws -> Row? {
-        let (statement, adapter) = try prepare(db)
-        return try Row.fetchOne(statement, adapter: adapter)
+        return try Row.fetchOne(db, self)
     }
 }
 
@@ -788,7 +900,7 @@ extension Row {
     ///
     ///     let row: Row = ["foo": 1, "foo": "bar", "baz": nil]
     ///     print(row)
-    ///     // Prints <Row foo:1 foo:"bar" baz:NULL>
+    ///     // Prints [foo:1 foo:"bar" baz:NULL]
     public convenience init(dictionaryLiteral elements: (String, DatabaseValueConvertible?)...) {
         self.init(impl: ArrayRowImpl(columns: elements.map { ($0, $1?.databaseValue ?? .null) }))
     }
@@ -874,15 +986,38 @@ extension Row {
     }
 }
 
-// CustomStringConvertible
+// CustomStringConvertible & CustomDebugStringConvertible
 extension Row {
     /// :nodoc:
     public var description: String {
-        return "<Row"
-            + map { (column, dbValue) in
-                " \(column):\(dbValue)"
-                }.joined(separator: "")
-            + ">"
+        return "["
+            + map { (column, dbValue) in "\(column):\(dbValue)" }.joined(separator: " ")
+            + "]"
+    }
+    
+    /// :nodoc:
+    public var debugDescription: String {
+        return debugDescription(level: 0)
+    }
+    
+    private func debugDescription(level: Int) -> String {
+        let prefix = repeatElement("  ", count: level + 1).joined(separator: "")
+        var str = ""
+        if level == 0 {
+            str = "▿ " + description
+            let unadapted = self.unadapted
+            if self != unadapted {
+                str += "\n" + prefix + "unadapted: " + unadapted.description
+            }
+        } else {
+            str = description
+        }
+        for scope in scopeNames.sorted() {
+            let scopedRow = scoped(on: scope)!
+            str += "\n" + prefix + "- " + scope + ": " + scopedRow.debugDescription(level: level + 1)
+        }
+        
+        return str
     }
 }
 
@@ -928,6 +1063,7 @@ extension RowIndex {
 protocol RowImpl {
     var count: Int { get }
     var isFetched: Bool { get }
+    var unadaptedRow: Row { get }
     func databaseValue(atUncheckedIndex index: Int) -> DatabaseValue
     func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value
     func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value?
@@ -947,6 +1083,10 @@ protocol RowImpl {
 }
 
 extension RowImpl {
+    var unadaptedRow: Row {
+        return Row(impl: self)
+    }
+    
     func hasNull(atUncheckedIndex index:Int) -> Bool {
         return databaseValue(atUncheckedIndex: index).isNull
     }

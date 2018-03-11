@@ -3,7 +3,7 @@
         
         // MARK: Full Text Search
         
-        /// Returns a new QueryInterfaceRequest with a matching predicate added
+        /// Creates a request with a matching predicate added
         /// to the eventual set of already applied predicates.
         ///
         ///     // SELECT * FROM books WHERE books MATCH '...'
@@ -17,16 +17,17 @@
         /// all requests by the `TableRecord.databaseSelection` property, or
         /// for individual requests with the `TableRecord.select` method.
         public func matching(_ pattern: FTS5Pattern?) -> QueryInterfaceRequest<T> {
-            switch query.source {
-            case .table(let name, let alias)?:
-                if let pattern = pattern {
-                    return filter(SQLExpressionBinary(.match, Column(alias ?? name), pattern))
-                } else {
-                    return filter(false)
+            return mapQuery { (db, query) in
+                guard query.source.isTable else {
+                    // Programmer error
+                    fatalError("fts5 match requires a table")
                 }
-            default:
-                // Programmer error
-                fatalError("fts5 match requires a table")
+                if let pattern = pattern {
+                    let qualifiedName = query.source.qualifiedName
+                    return query.filter(SQLExpressionBinary(.match, Column(qualifiedName), pattern))
+                } else {
+                    return query.filter(false)
+                }
             }
         }
     }

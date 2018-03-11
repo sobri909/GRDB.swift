@@ -151,7 +151,7 @@ class MutablePersistableRecordDeleteTests: GRDBTestCase {
             XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\" WHERE (\"name\" = 'Arthur')")
             
             try Person.filter(sql: "id = 1").deleteAll(db)
-            XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\" WHERE id = 1")
+            XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\" WHERE (id = 1)")
             
             try Person.select(Column("name")).deleteAll(db)
             XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\"")
@@ -172,7 +172,7 @@ class MutablePersistableRecordDeleteTests: GRDBTestCase {
                 XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\" ORDER BY \"name\" DESC LIMIT 1 OFFSET 2")
                 
                 try Person.limit(1, offset: 2).reversed().deleteAll(db)
-                XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\" ORDER BY \"rowid\" DESC LIMIT 1 OFFSET 2")
+                XCTAssertEqual(self.lastSQLQuery, "DELETE FROM \"persons\" LIMIT 1 OFFSET 2")
             }
         }
     }

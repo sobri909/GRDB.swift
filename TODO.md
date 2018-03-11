@@ -19,7 +19,6 @@ Xcode 9.3, Swift 4.1
 
 GRDB 3.0
 
-- [X] Rename "changes tracking" (ambiguous with database observation) to "record comparison"
 - [ ] Refactor SQL generation and rowId extraction from expression on the visitor pattern. Provide more documentation for literal expressions which become the only way to extend GRDB. Remove QueryInterfaceExtensibilityTests.swift
 - [ ] Make DatabasePool.write safe. See https://github.com/groue/GRDB.swift/commit/5e3c7d9c430df606a1cccfd4983be6b50e778a5c#commitcomment-26988970
 - [ ] Do one of those two:
@@ -30,16 +29,53 @@ GRDB 3.0
     - [ ] Introduce some record protocol with an associated primary key type. Restrict filter(key:) methods to this type. Allow distinguishing FooId from BarId types.
     - [ ] Replace Column with TypedColumn. How to avoid code duplication (repeated types)? Keypaths?
 - [ ] Not sure: Consider introducing RowDecodable and RowEncodable on top of FetchableRecord and MutableEncodableRecordRecord. This would allow keeping fetching and persistence methods private in some files.
-- [X] Drop IteratorCursor, use AnyCursor instead
-- [X] Rename TypedRequest to FetchRequest, drop Request
 - [ ] Rename columnCount -> numberOfColumns
 - [ ] Try to remove double EncodableRecord/MutableEncodableRecord protocols: Would non-mutating Record methods help?
-- [ ] DatabaseMigrator exposes the name of its support table (useful for tests that check which application tables are present). Alternative: have GRDB tell if a database table name is reserved by GRDB.
-- [ ] Ask DatabaseMigrator if a migration has been applied (useful for tests that check if a legacy database resource should be tested or not)
-- [ ] DatabaseMigrator.isInternalTable
-- [ ] DatabaseMigrator.canMigrate(_:upTo:)
-- [ ] Database.isSQLiteInternalTable
-- [ ] HiddenColumnsAdapter
+- [ ] Association Mammoth: One terrible request with parallel joins, chained joins, name conflict, filtering, ordering, annotation, conditions on several distinct tables
+- [X] Introduce a new safe way to create integer primary keys: t.autoincrementedPrimaryKey("id"). Foster it in the doc.
+- [ ] Replace `t.column("id", .integer).primaryKey()` with `t.autoIncrementedPrimaryKey("id")` in the documentation.
+- [ ] Enhance database regions for counted and joined requests (when we don't care about updates, but only about insertions and deletions)
+- [ ] Doc: replace book->author with passport->country?
+- [ ] Doc: replace all plural database table names with singular
+- [ ] HELP NEEDED: criticize singular table name convention, only due to defaultAssociationKey(for:).
+
+- [ ] NON-BLOCKING: Full text join (content-less ft table)
+- [ ] NON-BLOCKING: free associations
+    - [ ] Make public FreeAssociation and related APIs
+    - [ ] Fix and make public QueryInterfaceRequest.including(optional:QueryInterfaceRequest) et al.
+    - [ ] Fix and make public TableRecord.including(optional:QueryInterfaceRequest) et al.
+    - [ ] Remove @testable frrom AssociationFreeSQLTests.swift
+- [ ] NON-BLOCKING: Enhance database regions for joined requests (rowids) (see DatabaseRegionTests.testDatabaseRegionOfJoinedRequests)
+- [ ] HELP NEEDED, NON-BLOCKING: annotations
+    - [ ] How to consume annotations?
+    - [ ] Make public Annotation.swift and related APIs
+    - [ ] Remove @testable from AssociationAnnotationSQLTests.swift
+- [ ] HELP NEEDED, NON-BLOCKING: complex chains
+    
+    A chain is "complex" when:
+    - A key is redefined, as in Foo.including(Foo.bar).including(Foo.bar)
+    - An optional chain is followed by a required chain, as in Foo.including(optional: Foo.bar).including(required: Bar.baz)
+    
+    Those two problems happen because one can use queries that are already joined:
+    
+    - Case 1:
+        
+        let base = Foo.makeRequest() // returns Foo.including(Foo.bar)
+        let request = base.including(Foo.bar) // unconscious redefinition of "bar"
+    
+    - Case 2:
+        
+        let assoc = Foo.specialBar // returns Foo.belongsTo(Foo.bar.including(required: Bar.baz))
+        let request = Foo.including(optional: assoc) // optional followed by required
+    
+    - [ ] hasOne/ManyThrough
+    - [ ] Solve the "optional followed by required"" problem (look for TODO: chainOptionalRequired)
+    - [ ] Decide if redefinition (Foo.including(Foo.bar).including(Foo.bar)) should:
+        - *Fatal error* because we redefine the query for the key "bar" ?
+        - *Intersect* the queries named "bar"?
+            - Foo.include(required: Foo.bar).include(optional: Foo.bar) <=> Foo.include(required: Foo.bar)
+            - Foo.include(required: Foo.bar.filter(f1)).include(optional: Foo.bar.filter(f2)) <=> Foo.include(required: Foo.bar.filter(f1 && f2)
+
 
 Not sure
 

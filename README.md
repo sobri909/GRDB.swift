@@ -166,7 +166,7 @@ Avoid SQL with the [query interface](#the-query-interface):
 ```swift
 try dbQueue.inDatabase { db in
     try db.create(table: "places") { t in
-        t.column("id", .integer).primaryKey()
+        t.autoIncrementedPrimaryKey("id")
         t.column("title", .text).notNull()
         t.column("favorite", .boolean).notNull().defaults(to: false)
         t.column("longitude", .double).notNull()
@@ -1621,18 +1621,18 @@ Player.select(maxLength.apply(nameColumn))
 
 ```swift
 try db.create(table: "players") { t in
-    t.column("id", .integer).primaryKey()
+    t.autoIncrementedPrimaryKey("id")
     t.column("name", .text)
 }
 
-// <Row type:"table" name:"players" tbl_name:"players" rootpage:2
-//      sql:"CREATE TABLE players(id INTEGER PRIMARY KEY, name TEXT)">
+// [type:"table" name:"players" tbl_name:"players" rootpage:2
+//  sql:"CREATE TABLE players(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)"]
 for row in try Row.fetchAll(db, "SELECT * FROM sqlite_master") {
     print(row)
 }
 
-// <Row cid:0 name:"id" type:"INTEGER" notnull:0 dflt_value:NULL pk:1>
-// <Row cid:1 name:"name" type:"TEXT" notnull:0 dflt_value:NULL pk:0>
+// [cid:0 name:"id" type:"INTEGER" notnull:0 dflt_value:NULL pk:1]
+// [cid:1 name:"name" type:"TEXT" notnull:0 dflt_value:NULL pk:0]
 for row in try Row.fetchAll(db, "PRAGMA table_info('players')") {
     print(row)
 }
@@ -1676,7 +1676,7 @@ To see how row adapters can be used, see [Joined Queries Support](#joined-querie
 ColumnMapping renames columns. Build one with a dictionary whose keys are adapted column names, and values the column names in the raw row:
 
 ```swift
-// <Row newName:"Hello">
+// [newName:"Hello"]
 let adapter = ColumnMapping(["newName": "oldName"])
 let row = try Row.fetchOne(db, "SELECT 'Hello' AS oldName", adapter: adapter)!
 ```
@@ -1686,7 +1686,7 @@ let row = try Row.fetchOne(db, "SELECT 'Hello' AS oldName", adapter: adapter)!
 `SuffixRowAdapter` hides the first columns in a row:
 
 ```swift
-// <Row b:1 c:2>
+// [b:1 c:2]
 let adapter = SuffixRowAdapter(fromIndex: 1)
 let row = try Row.fetchOne(db, "SELECT 0 AS a, 1 AS b, 2 AS c", adapter: adapter)!
 ```
@@ -1696,7 +1696,7 @@ let row = try Row.fetchOne(db, "SELECT 0 AS a, 1 AS b, 2 AS c", adapter: adapter
 `RangeRowAdapter` only exposes a range of columns.
 
 ```swift
-// <Row b:1>
+// [b:1]
 let adapter = RangeRowAdapter(1..<2)
 let row = try Row.fetchOne(db, "SELECT 0 AS a, 1 AS b, 2 AS c", adapter: adapter)!
 ```
@@ -1728,9 +1728,9 @@ let row = try Row.fetchOne(db, "SELECT 0 AS a, 1 AS b, 2 AS c, 3 AS d", adapter:
 ScopeAdapter does not change the columns and values of the fetched row. Instead, it defines *scopes*, which you access with the `Row.scoped(on:)` method. This method returns an optional Row, which is nil if the scope is missing.
 
 ```swift
-row                       // <Row a:0 b:1 c:2 d:3>
-row.scoped(on: "left")    // <Row a:0 b:1>
-row.scoped(on: "right")   // <Row c:2 d:3>
+row                       // [a:0 b:1 c:2 d:3]
+row.scoped(on: "left")    // [a:0 b:1]
+row.scoped(on: "right")   // [c:2 d:3]
 row.scoped(on: "missing") // nil
 ```
 
@@ -1748,12 +1748,12 @@ let adapter = ScopeAdapter([
 let row = try Row.fetchOne(db, "SELECT 0 AS a, 1 AS b, 2 AS c, 3 AS d", adapter: adapter)!
 
 let leftRow = row.scoped(on: "left")!
-leftRow.scoped(on: "left")  // <Row a:0>
-leftRow.scoped(on: "right") // <Row b:1>
+leftRow.scoped(on: "left")   // [a:0]
+leftRow.scoped(on: "right")  // [b:1]
 
 let rightRow = row.scoped(on: "right")!
-rightRow.scoped(on: "left")  // <Row c:2>
-rightRow.scoped(on: "right") // <Row d:3>
+rightRow.scoped(on: "left")  // [c:2]
+rightRow.scoped(on: "right") // [d:3]
 ```
 
 Any adapter can be extended with scopes:
@@ -1764,8 +1764,8 @@ let adapter = ScopeAdapter(base: baseAdapter, scopes: [
     "remainder": SuffixRowAdapter(fromIndex: 2)])
 let row = try Row.fetchOne(db, "SELECT 0 AS a, 1 AS b, 2 AS c, 3 AS d", adapter: adapter)!
 
-row // <Row a:0 b:1>
-row.scoped(on: "remainder") // <Row c:2 d:3>
+row                         // [a:0 b:1]
+row.scoped(on: "remainder") // [c:2 d:3]
 ```
 
 
@@ -1914,12 +1914,14 @@ player.name = "Arthur"
 try player.update(db)
 ```
 
-It is possible to [avoid useless updates](#record-comparison):
+Records can [avoid useless updates](#record-comparison):
 
 ```swift
 let player = try Player.fetchOne(db, key: 1)!
 player.name = "Arthur"
-try player.updateChanges(db)
+if player.hasDatabaseChanges {
+    try player.update(db)
+}
 ```
 
 For batch updates, execute an [SQL query](#executing-updates):
@@ -1946,7 +1948,7 @@ try Player.deleteOne(db, key: ["email": "arthur@example.com"])
 try Country.deleteAll(db, keys: ["FR", "US"])
 ```
 
-For batch deletes, execute an [SQL query](#executing-updates), or see the [query interface](#the-query-interface):
+For batch deletes, see the [query interface](#the-query-interface):
 
 ```swift
 try Player.filter(emailColumn == nil).deleteAll(db)
@@ -1980,16 +1982,27 @@ Details follow:
 
 **GRDB ships with three record protocols**. Your own types will adopt one or several of them, according to the abilities you want to extend your types with.
 
-- [FetchableRecord] is able to **decode database rows**.
+- [FetchableRecord] is able to **read**: it grants the ability to efficiently decode raw database row.
     
-    You can always decode rows yourself:
+    Imagine you want to load places from the `places` database table.
+    
+    One way to do it is to load raw database rows:
     
     ```swift
+    func fetchPlaceRows(_ db: Database) throws -> [Row] {
+        return try Row.fetchAll(db, "SELECT * FROM places")
+    }
+    ```
+    
+    The problem is that [raw rows](#row-queries) are not easy to deal with, and you may prefer using a proper `Place` type:
+    
+    ```swift
+    // Dedicated model
     struct Place { ... }
-    try dbQueue.inDatabase { db in
+    func fetchPlaces(_ db: Database) throws -> [Place] {
         let rows = try Row.fetchAll(db, "SELECT * FROM places")
-        let places: [Place] = rows.map { row in
-            return Place(
+        return rows.map { row in
+            Place(
                 id: row["id"],
                 title: row["title"],
                 coordinate: CLLocationCoordinate2D(
@@ -2000,21 +2013,50 @@ Details follow:
     }
     ```
     
-    But FetchableRecord lets you write code that is much more readable, and much more efficient as well, both in terms of performance and memory usage:
+    This code is verbose, and so you define an `init(row:)` initializer:
     
     ```swift
-    struct Place: FetchableRecord { ... }
-    try dbQueue.inDatabase { db in
-        let places = try Place.fetchAll(db, "SELECT * FROM places")
+    // Row initializer
+    struct Place {
+        init(row: Row) {
+            id = row["id"]
+            ...
+        }
+    }
+    func fetchPlaces(_ db: Database) throws -> [Place] {
+        let rows = try Row.fetchAll(db, "SELECT * FROM places")
+        return rows.map { Place(row: $0) }
     }
     ```
     
-    FetchableRecord is not able to build SQL requests for you, though. For that, you also need TableRecord:
-    
-- [TableRecord] is able to **generate SQL queries**:
+    Now you notice that this code may use a lot of memory when you have many rows: a full array of database rows is created in order to build an array of places. Furthermore, rows that have been copied from the database have lost the ability to directly load values from SQLite: that's inefficient. You thus use a [database cursor](#cursors), which is both lazy and efficient:
     
     ```swift
-    struct Place: TableRecord { ... }
+    // Cursor for efficiency
+    func fetchPlaces(_ db: Database) throws -> [Place] {
+        let rowCursor = try Row.fetchCursor(db, "SELECT * FROM places")
+        let placeCursor = rowCursor.map { Place(row: $0) }
+        return try Array(placeCursor)
+    }
+    ```
+    
+    That's better. And that's what FetchableRecord does, with a little performance bonus, and in a single line:
+    
+    ```swift
+    struct Place : FetchableRecord {
+        init(row: Row) { ... }
+    }
+    func fetchPlaces(_ db: Database) throws -> [Place] {
+        return try Place.fetchAll(db, "SELECT * FROM places")
+    }
+    ```
+    
+    FetchableRecord is not able to build SQL requests, though. For that, you also need TableRecord:
+    
+- [TableRecord] is able to **build requests without SQL**:
+    
+    ```swift
+    struct Place : TableRecord { ... }
     // SELECT * FROM places ORDER BY title
     let request = Place.order(Column("title"))
     ```
@@ -2022,7 +2064,7 @@ Details follow:
     When a type adopts both TableRecord and FetchableRecord, it can load from those requests:
     
     ```swift
-    struct Place: TableRecord, FetchableRecord { ... }
+    struct Place : TableRecord, FetchableRecord { ... }
     try dbQueue.inDatabase { db in
         let places = try Place.order(Column("title")).fetchAll(db)
         let paris = try Place.fetchOne(key: 1)
@@ -2038,9 +2080,7 @@ Details follow:
         try Place(...).insert(db)
     }
     ```
-    
-    A persistable record can also [compare](#record-comparison) itself against other records, and avoid useless database updates.
-    
+
 
 ## FetchableRecord Protocol
 
@@ -2568,11 +2608,11 @@ The [five different policies](https://www.sqlite.org/lang_conflict.html) are: ab
     
     ```swift
     // CREATE TABLE players (
-    //     id INTEGER PRIMARY KEY,
+    //     id INTEGER PRIMARY KEY AUTOINCREMENT,
     //     email TEXT UNIQUE ON CONFLICT REPLACE
     // )
     try db.create(table: "players") { t in
-        t.column("id", .integer).primaryKey()
+        t.autoIncrementedPrimaryKey("id")
         t.column("email", .text).unique(onConflict: .replace) // <--
     }
     
@@ -2586,11 +2626,11 @@ The [five different policies](https://www.sqlite.org/lang_conflict.html) are: ab
     
     ```swift
     // CREATE TABLE players (
-    //     id INTEGER PRIMARY KEY,
+    //     id INTEGER PRIMARY KEY AUTOINCREMENT,
     //     email TEXT UNIQUE
     // )
     try db.create(table: "players") { t in
-        t.column("id", .integer).primaryKey()
+        t.autoIncrementedPrimaryKey("id")
         t.column("email", .text)
     }
     
@@ -2918,14 +2958,14 @@ Once granted with a [database connection](#database-connections), you can setup 
 
 ```swift
 // CREATE TABLE places (
-//   id INTEGER PRIMARY KEY,
+//   id INTEGER PRIMARY KEY AUTOINCREMENT,
 //   title TEXT,
 //   favorite BOOLEAN NOT NULL DEFAULT 0,
 //   latitude DOUBLE NOT NULL,
 //   longitude DOUBLE NOT NULL
 // )
 try db.create(table: "places") { t in
-    t.column("id", .integer).primaryKey()
+    t.autoIncrementedPrimaryKey("id")
     t.column("title", .text)
     t.column("favorite", .boolean).notNull().defaults(to: false)
     t.column("longitude", .double).notNull()
@@ -2979,8 +3019,11 @@ Define **not null** columns, and set **default** values:
 Use an individual column as **primary**, **unique**, or **foreign key**. When defining a foreign key, the referenced column is the primary key of the referenced table (unless you specify otherwise):
 
 ```swift
-    // id INTEGER PRIMARY KEY,
-    t.column("id", .integer).primaryKey()
+    // id INTEGER PRIMARY KEY AUTOINCREMENT,
+    t.autoIncrementedPrimaryKey("id")
+    
+    // uuid TEXT PRIMARY KEY,
+    t.column("uuid", .text).primaryKey()
     
     // email TEXT UNIQUE,
     t.column("email", .text).unique()
@@ -2988,6 +3031,10 @@ Use an individual column as **primary**, **unique**, or **foreign key**. When de
     // countryCode TEXT REFERENCES countries(code) ON DELETE CASCADE,
     t.column("countryCode", .text).references("countries", onDelete: .cascade)
 ```
+
+> :bulb: **Tip**: when you need an integer primary key that automatically generates unique values, it is highly recommended that you use the `autoIncrementedPrimaryKey` method.
+>
+> Such primary key prevents the reuse of ids, and is an excellent guard against data races that could happen when your application processes ids in an asynchronous way. The auto-incremented primary key provides the guarantee that a given id can't reference a row that is different from the one it used to be at the beginning of the asynchronous process, even if this row gets deleted and a new one is inserted in between.
 
 **Create an index** on the column:
 
@@ -3863,7 +3910,7 @@ Yet any kind of schema change is still possible. The SQLite documentation explai
 // Add a NOT NULL constraint on players.name:
 migrator.registerMigrationWithDeferredForeignKeyCheck("AddNotNullCheckOnName") { db in
     try db.create(table: "new_players") { t in
-        t.column("id", .integer).primaryKey()
+        t.autoIncrementedPrimaryKey("id")
         t.column("name", .text).notNull()
     }
     try db.execute("INSERT INTO new_players SELECT * FROM players")
@@ -6769,7 +6816,7 @@ Database accesses that run in background threads postpone the closing of connect
 
 When you want to debug a request that does not deliver the expected results, you may want to print the SQL that is actually executed.
 
-Use the `asSQLRequest` method:
+Turn the request into an SQLRequest:
 
 ```swift
 try dbQueue.inDatabase { db in
@@ -6777,9 +6824,9 @@ try dbQueue.inDatabase { db in
         .filter(Column("origin") == "Burgundy")
         .order(Column("price")
     
-    let sqlRequest = try request.asSQLRequest(db)
+    let sqlRequest = try SQLRequest(db, request: request)
     print(sqlRequest.sql)
-    // Prints SELECT * FROM wines WHERE origin = ? ORDER BY price
+    // Prints "SELECT * FROM wines WHERE origin = ? ORDER BY price"
     print(sqlRequest.arguments)
     // Prints ["Burgundy"]
 }

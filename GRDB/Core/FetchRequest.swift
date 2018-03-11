@@ -124,14 +124,14 @@ public struct AnyFetchRequest<T> : FetchRequest {
     private let _fetchCount: (Database) throws -> Int
     private let _fetchedRegion: (Database) throws -> DatabaseRegion
     
-    /// Creates a new request that wraps and forwards operations to `request`.
+    /// Creates a request that wraps and forwards operations to `request`.
     public init<Request: FetchRequest>(_ request: Request) {
         _prepare = request.prepare
         _fetchCount = request.fetchCount
         _fetchedRegion = request.fetchedRegion
     }
     
-    /// Creates a new request whose `prepare()` method wraps and forwards
+    /// Creates a request whose `prepare()` method wraps and forwards
     /// operations the argument closure.
     public init(_ prepare: @escaping (Database) throws -> (SelectStatement, RowAdapter?)) {
         _prepare = { db in
@@ -175,7 +175,7 @@ public struct SQLRequest<T> : FetchRequest {
     public let adapter: RowAdapter?
     private let cache: Cache?
     
-    /// Creates a new request from an SQL string, optional arguments, and
+    /// Creates a request from an SQL string, optional arguments, and
     /// optional row adapter.
     ///
     ///     let request = SQLRequest("SELECT * FROM players")
@@ -192,7 +192,7 @@ public struct SQLRequest<T> : FetchRequest {
         self.init(sql, arguments: arguments, adapter: adapter, fromCache: cached ? .public : nil)
     }
     
-    /// Creates a new SQL request from any other fetch request.
+    /// Creates an SQL request from any other fetch request.
     ///
     /// - parameters:
     ///     - db: A database connection.
@@ -205,7 +205,7 @@ public struct SQLRequest<T> : FetchRequest {
         self.init(statement.sql, arguments: statement.arguments, adapter: adapter, cached: cached)
     }
     
-    /// Creates a new SQL request from an SQL string, optional arguments, and
+    /// Creates an SQL request from an SQL string, optional arguments, and
     /// optional row adapter.
     ///
     ///     let request = SQLRequest("SELECT * FROM players")

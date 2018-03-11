@@ -57,17 +57,21 @@ public protocol SQLSpecificExpressible : SQLExpressible {
 extension SQLExpressible where Self: SQLOrderingTerm {
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public var reversed: SQLOrderingTerm {
         return SQLOrdering.desc(sqlExpression)
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public func orderingTermSQL(_ arguments: inout StatementArguments?) -> String {
         return sqlExpression.expressionSQL(&arguments)
+    }
+    
+    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
+    /// :nodoc:
+    public func qualifiedOrdeding(with qualifier: SQLTableQualifier) -> SQLOrderingTerm {
+        return sqlExpression.qualifiedExpression(with: qualifier)
     }
 }
 

@@ -222,6 +222,8 @@ protocol AuthorizedStatement {
     // https://bugs.swift.org/browse/SR-2347
     //
     // We work around SR-2347 with this internal protocol.
+    //
+    // TODO: this bug has been fixed in Swift 4.2? https://github.com/apple/swift/blob/master/CHANGELOG.md#swift-42
     init(
         database: Database,
         statementStart: UnsafePointer<Int8>,
@@ -584,7 +586,7 @@ extension UpdateStatement: AuthorizedStatement { }
 ///     let sql = "SELECT ?2 AS two, :foo AS foo, ?1 AS one, :foo AS foo2, :bar AS bar"
 ///     let row = try Row.fetchOne(db, sql, arguments: [1, 2, "bar"] + ["foo": "foo"])!
 ///     print(row)
-///     // Prints <Row two:2 foo:"foo" one:1 foo2:"foo" bar:"bar">
+///     // Prints [two:2 foo:"foo" one:1 foo2:"foo" bar:"bar"]
 public struct StatementArguments: CustomStringConvertible, Equatable, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral {
     var values: [DatabaseValue] = []
     var namedValues: [String: DatabaseValue] = [:]
@@ -734,7 +736,7 @@ public struct StatementArguments: CustomStringConvertible, Equatable, Expressibl
         return replacedValues
     }
     
-    /// Creates a new StatementArguments by extending the left-hand size
+    /// Creates a StatementArguments by extending the left-hand size
     /// arguments with the right-hand side arguments.
     ///
     /// Positional arguments (provided as arrays) are concatenated:
@@ -770,7 +772,7 @@ public struct StatementArguments: CustomStringConvertible, Equatable, Expressibl
         return lhs
     }
     
-    /// Creates a new StatementArguments by extending the left-hand size
+    /// Creates a StatementArguments by extending the left-hand size
     /// arguments with the right-hand side arguments.
     ///
     /// Positional arguments (provided as arrays) are concatenated:

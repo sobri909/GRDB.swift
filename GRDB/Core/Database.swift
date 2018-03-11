@@ -109,6 +109,12 @@ public final class Database {
         // > Autocommit mode is on by default. Autocommit mode is disabled by a
         // > BEGIN statement. Autocommit mode is re-enabled by a COMMIT
         // > or ROLLBACK.
+        //
+        // This function is not thread-safe:
+        //
+        // > If another thread changes the autocommit status of the database
+        // > connection while this routine is running, then the return value
+        // > is undefined.
         return sqlite3_get_autocommit(sqliteConnection) == 0
     }
     
@@ -724,7 +730,7 @@ extension Database {
         // The second technique is more robust, because we don't have to guess
         // which rollback errors should be ignored, and which rollback errors
         // should be exposed to the library user.
-        if sqlite3_get_autocommit(sqliteConnection) == 0 {
+        if sqlite3_get_autocommit(sqliteConnection) == 0 { // Not thread-safe (see isInsideTransaction)
             try execute("ROLLBACK TRANSACTION")
         }
     }

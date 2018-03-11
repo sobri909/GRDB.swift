@@ -91,7 +91,7 @@ class TableRecordQueryInterfaceRequestTests: GRDBTestCase {
             try db.execute("INSERT INTO readers (name, age) VALUES (?, ?)", arguments: ["Barbara", 36])
             
             let request = Reader.select(sql: "name, id - 1")
-            let rows = try request.asRequest(of: Row.self).fetchAll(db)
+            let rows = try Row.fetchAll(db, request)
             XCTAssertEqual(lastSQLQuery, "SELECT name, id - 1 FROM \"readers\"")
             XCTAssertEqual(rows.count, 2)
             XCTAssertEqual(rows[0][0] as String, "Arthur")
@@ -108,7 +108,7 @@ class TableRecordQueryInterfaceRequestTests: GRDBTestCase {
             try db.execute("INSERT INTO readers (name, age) VALUES (?, ?)", arguments: ["Barbara", 36])
             
             let request = Reader.select(sql: "name, id - ?", arguments: [1])
-            let rows = try request.asRequest(of: Row.self).fetchAll(db)
+            let rows = try Row.fetchAll(db, request)
             XCTAssertEqual(lastSQLQuery, "SELECT name, id - 1 FROM \"readers\"")
             XCTAssertEqual(rows.count, 2)
             XCTAssertEqual(rows[0][0] as String, "Arthur")
@@ -125,7 +125,7 @@ class TableRecordQueryInterfaceRequestTests: GRDBTestCase {
             try db.execute("INSERT INTO readers (name, age) VALUES (?, ?)", arguments: ["Barbara", 36])
             
             let request = Reader.select(sql: "name, id - :n", arguments: ["n": 1])
-            let rows = try request.asRequest(of: Row.self).fetchAll(db)
+            let rows = try Row.fetchAll(db, request)
             XCTAssertEqual(lastSQLQuery, "SELECT name, id - 1 FROM \"readers\"")
             XCTAssertEqual(rows.count, 2)
             XCTAssertEqual(rows[0][0] as String, "Arthur")
@@ -142,7 +142,7 @@ class TableRecordQueryInterfaceRequestTests: GRDBTestCase {
             try db.execute("INSERT INTO readers (name, age) VALUES (?, ?)", arguments: ["Barbara", 36])
             
             let request = Reader.select(Col.name, Col.id - 1)
-            let rows = try request.asRequest(of: Row.self).fetchAll(db)
+            let rows = try Row.fetchAll(db, request)
             XCTAssertEqual(lastSQLQuery, "SELECT \"name\", (\"id\" - 1) FROM \"readers\"")
             XCTAssertEqual(rows.count, 2)
             XCTAssertEqual(rows[0][0] as String, "Arthur")
@@ -166,21 +166,21 @@ class TableRecordQueryInterfaceRequestTests: GRDBTestCase {
         let dbQueue = try makeDatabaseQueue()
         XCTAssertEqual(
             sql(dbQueue, Reader.filter(sql: "id <> 1")),
-            "SELECT * FROM \"readers\" WHERE id <> 1")
+            "SELECT * FROM \"readers\" WHERE (id <> 1)")
     }
     
     func testFilterLiteralWithPositionalArguments() throws {
         let dbQueue = try makeDatabaseQueue()
         XCTAssertEqual(
             sql(dbQueue, Reader.filter(sql: "id <> ?", arguments: [1])),
-            "SELECT * FROM \"readers\" WHERE id <> 1")
+            "SELECT * FROM \"readers\" WHERE (id <> 1)")
     }
     
     func testFilterLiteralWithNamedArguments() throws {
         let dbQueue = try makeDatabaseQueue()
         XCTAssertEqual(
             sql(dbQueue, Reader.filter(sql: "id <> :id", arguments: ["id": 1])),
-            "SELECT * FROM \"readers\" WHERE id <> 1")
+            "SELECT * FROM \"readers\" WHERE (id <> 1)")
     }
     
     func testFilter() throws {

@@ -204,17 +204,6 @@ extension DatabaseValue {
     }
 }
 
-// MARK: - SQLSelectable
-
-extension DatabaseValue {
-    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
-    /// :nodoc:
-    public func qualified(by qualifier: SQLTableQualifier) -> DatabaseValue {
-        return self
-    }
-}
-
 // MARK: - Lossless conversions
 
 extension DatabaseValue {
@@ -360,6 +349,18 @@ extension DatabaseValue {
             return SQLExpressionNot(self)
         }
     }
+    
+    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
+    /// :nodoc:
+    public func qualifiedExpression(with qualifier: SQLTableQualifier) -> SQLExpression {
+        return self
+    }
+    
+    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
+    /// :nodoc:
+    public func resolvedExpression(inContext context: [String: PersistenceContainer]) -> SQLExpression {
+        return self
+    }
 }
 
 // CustomStringConvertible
@@ -376,7 +377,7 @@ extension DatabaseValue {
         case .string(let string):
             return String(reflecting: string)
         case .blob(let data):
-            return data.description
+            return "Data(\(data.description))"
         }
     }
 }

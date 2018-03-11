@@ -437,6 +437,109 @@ class DatabaseRegionTests : GRDBTestCase {
         }
     }
     
+    func testDatabaseRegionOfJoinedRequests() throws {
+        let dbQueue = try makeDatabaseQueue()
+        try dbQueue.inDatabase { db in
+            try db.execute("CREATE TABLE foo (id INTEGER PRIMARY KEY, a TEXT)")
+            try db.execute("CREATE TABLE bar (id INTEGER PRIMARY KEY, fooId INTEGER REFERENCES foo(id))")
+            struct Foo: TableRecord {
+                static let bars = hasMany(Bar.self)
+                static let databaseTableName = "foo"
+            }
+            struct Bar: TableRecord {
+                static let foo = belongsTo(Foo.self)
+                static let databaseTableName = "bar"
+            }
+            
+            do {
+                let request = Foo.including(optional: Foo.bars)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)")
+            }
+            do {
+                // SELECT "foo".* FROM "foo" LEFT JOIN "bar" ON ("bar"."fooId" = "foo"."id")
+                let request = Foo.joining(optional: Foo.bars)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId),foo(a,id)")
+            }
+            do {
+                let request = Bar.including(optional: Bar.foo)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)")
+            }
+            do {
+                // SELECT "bar".* FROM "bar" LEFT JOIN "foo" ON ("foo"."id" = "bar"."fooId")
+                let request = Bar.joining(optional: Bar.foo)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(*)") // TODO: this is correct, but we could be more precise. We don't care about foo columns, but only about foo rowids (insertions, deletions)
+            }
+            
+            do {
+                let request = Foo.filter(Column("id") == 1).including(optional: Foo.bars)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Foo.filter(Column("id") == 1).joining(optional: Foo.bars)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.filter(Column("id") == 1).including(optional: Bar.foo)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.filter(Column("id") == 1).joining(optional: Bar.foo)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(*)") // TODO: this is correct, but we could use row ids
+            }
+            
+            do {
+                let request = Foo.filter(keys: [1, 2, 3]).including(optional: Foo.bars)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Foo.filter(keys: [1, 2, 3]).joining(optional: Foo.bars)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.filter(keys: [1, 2, 3]).including(optional: Bar.foo)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.filter(keys: [1, 2, 3]).joining(optional: Bar.foo)
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(*)") // TODO: this is correct, but we could use row ids
+            }
+            
+            do {
+                let request = Foo.including(optional: Foo.bars.filter(Column("id") == 1))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Foo.joining(optional: Foo.bars.filter(Column("id") == 1))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.including(optional: Bar.foo.filter(Column("id") == 1))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.joining(optional: Bar.foo.filter(Column("id") == 1))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(*)") // TODO: this is correct, but we could use row ids
+            }
+            
+            do {
+                let request = Foo.including(optional: Foo.bars.filter(keys: [1, 2, 3]))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Foo.joining(optional: Foo.bars.filter(keys: [1, 2, 3]))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.including(optional: Bar.foo.filter(keys: [1, 2, 3]))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(a,id)") // TODO: this is correct, but we could use row ids
+            }
+            do {
+                let request = Bar.joining(optional: Bar.foo.filter(keys: [1, 2, 3]))
+                try XCTAssertEqual(request.fetchedRegion(db).description, "bar(fooId,id),foo(*)") // TODO: this is correct, but we could use row ids
+            }
+        }
+    }
+    
     func testUpdateStatement() throws {
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in

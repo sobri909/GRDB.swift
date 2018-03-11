@@ -2,7 +2,7 @@ extension QueryInterfaceRequest {
     
     // MARK: Full Text Search
     
-    /// Returns a new QueryInterfaceRequest with a matching predicate added
+    /// Creates a request with a matching predicate added
     /// to the eventual set of already applied predicates.
     ///
     ///     // SELECT * FROM books WHERE books MATCH '...'
@@ -12,12 +12,17 @@ extension QueryInterfaceRequest {
     /// If the search pattern is nil, the request does not match any
     /// database row.
     public func matching(_ pattern: FTS3Pattern?) -> QueryInterfaceRequest<T> {
-        switch query.source {
-        case .table(let name, let alias)?:
-            return filter(SQLExpressionBinary(.match, Column(alias ?? name), pattern ?? DatabaseValue.null))
-        default:
-            // Programmer error
-            fatalError("fts3 match requires a table")
+        return mapQuery { (db, query) in
+            guard query.source.isTable else {
+                // Programmer error
+                fatalError("fts3 match requires a table")
+            }
+            if let pattern = pattern {
+                let qualifiedName = query.source.qualifiedName
+                return query.filter(SQLExpressionBinary(.match, Column(qualifiedName), pattern))
+            } else {
+                return query.filter(false)
+            }
         }
     }
 }

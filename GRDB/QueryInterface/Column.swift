@@ -16,19 +16,17 @@ public struct Column : SQLExpression {
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public func expressionSQL(_ arguments: inout StatementArguments?) -> String {
-        if let qualifierName = qualifier?.name {
+        if let qualifierName = qualifier?.qualifiedName {
             return qualifierName.quotedDatabaseIdentifier + "." + name.quotedDatabaseIdentifier
         }
         return name.quotedDatabaseIdentifier
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
-    public func qualified(by qualifier: SQLTableQualifier) -> Column {
+    public func qualifiedExpression(with qualifier: SQLTableQualifier) -> SQLExpression {
         if self.qualifier != nil {
             // Never requalify
             return self
@@ -36,5 +34,20 @@ public struct Column : SQLExpression {
         var column = self
         column.qualifier = qualifier
         return column
+    }
+    
+    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
+    /// :nodoc:
+    public func resolvedExpression(inContext context: [String: PersistenceContainer]) -> SQLExpression {
+        guard
+            let qualifier = qualifier,
+            let qualifiedName = qualifier.qualifiedName,
+            let container = context[qualifiedName],
+            let value = container.value(forCaseInsensitiveColumn: name) else
+        {
+            return self
+        }
+        
+        return value
     }
 }

@@ -2,10 +2,51 @@
 ///
 /// See https://github.com/groue/GRDB.swift#the-query-interface
 public struct QueryInterfaceRequest<T> {
-    let query: QueryInterfaceQuery
+    // A QueryInterfaceRequest can turn into a QueryInterfaceQuery once given
+    // a database connection.
+    private var queryPromise: DatabasePromise<QueryInterfaceQuery>
+    
+    // Processing of the query filters, orderings, selection...
+    private var transforms: [DatabaseTransform<QueryInterfaceQuery>] = []
+    
+    // Processing of the query chains. Must happen after selection has been
+    // defined, so that the selected rows have a fixed layout on which we can
+    // define row scopes that help consuming joined rows.
+    private var chainTransforms: [DatabaseTransform<QueryInterfaceQuery>] = []
+    
+    init(queryPromise: @escaping DatabasePromise<QueryInterfaceQuery>) {
+        self.queryPromise = queryPromise
+    }
     
     init(query: QueryInterfaceQuery) {
-        self.query = query
+        self.init(queryPromise: { _ in query })
+    }
+    
+    func query(_ db: Database) throws -> QueryInterfaceQuery {
+        var query = try queryPromise(db)
+        
+        // Filters, orderings, selection...
+        query = try transforms.reduce(query) { try $1(db, $0) }
+        
+        // Query chains
+        query = try chainTransforms.reduce(query) { try $1(db, $0) }
+        
+        // Resolve table qualifiers ambiguities
+        query.allQualifiers.resolveAmbiguities()
+        
+        return query
+    }
+    
+    func mapQuery(_ transform: @escaping DatabaseTransform<QueryInterfaceQuery>) -> QueryInterfaceRequest<T> {
+        var request = self
+        request.transforms.append(transform)
+        return request
+    }
+    
+    func mapQueryChain(_ transform: @escaping DatabaseTransform<QueryInterfaceQuery>) -> QueryInterfaceRequest<T> {
+        var request = self
+        request.chainTransforms.append(transform)
+        return request
     }
 }
 
@@ -19,7 +60,7 @@ extension QueryInterfaceRequest : FetchRequest {
     ///
     /// :nodoc:
     public func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?) {
-        return try query.prepare(db)
+        return try query(db).prepare(db)
     }
     
     /// The number of rows fetched by the request.
@@ -28,38 +69,22 @@ extension QueryInterfaceRequest : FetchRequest {
     ///
     /// :nodoc:
     public func fetchCount(_ db: Database) throws -> Int {
-        return try query.fetchCount(db)
+        return try query(db).fetchCount(db)
     }
     
     /// The database region that the request looks into.
     ///
     /// :nodoc:
     public func fetchedRegion(_ db: Database) throws -> DatabaseRegion {
-        return try query.fetchedRegion(db)
+        return try query(db).fetchedRegion(db)
     }
 }
 
-extension QueryInterfaceRequest {
+extension QueryInterfaceRequest : SelectionRequest, FilteredRequest, AggregatingRequest, OrderedRequest {
     
     // MARK: Request Derivation
     
-    /// A new QueryInterfaceRequest with a new net of selected columns.
-    ///
-    ///     // SELECT id, email FROM players
-    ///     var request = Player.all()
-    ///     request = request.select(Column("id"), Column("email"))
-    ///
-    /// Any previous selection is replaced:
-    ///
-    ///     // SELECT email FROM players
-    ///     request
-    ///         .select(Column("id"))
-    ///         .select(Column("email"))
-    public func select(_ selection: SQLSelectable...) -> QueryInterfaceRequest<T> {
-        return select(selection)
-    }
-    
-    /// A new QueryInterfaceRequest with a new net of selected columns.
+    /// Creates a request with a new net of selected columns.
     ///
     ///     // SELECT id, email FROM players
     ///     var request = Player.all()
@@ -72,28 +97,15 @@ extension QueryInterfaceRequest {
     ///         .select([Column("id")])
     ///         .select([Column("email")])
     public func select(_ selection: [SQLSelectable]) -> QueryInterfaceRequest<T> {
-        var query = self.query
-        query.selection = selection
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.select(selection) }
     }
     
-    /// A new QueryInterfaceRequest with a new net of selected columns.
-    ///
-    ///     // SELECT id, email FROM players
-    ///     var request = Player.all()
-    ///     request = request.select(sql: "id, email")
-    ///
-    /// Any previous selection is replaced:
-    ///
-    ///     // SELECT email FROM players
-    ///     request
-    ///         .select(sql: "id")
-    ///         .select(sql: "email")
-    public func select(sql: String, arguments: StatementArguments? = nil) -> QueryInterfaceRequest<T> {
-        return select(SQLExpressionLiteral(sql, arguments: arguments))
+    /// Creates a request with columns appended to the selection.
+    public func annotate(with selection: [SQLSelectable]) -> QueryInterfaceRequest<T> {
+        return mapQuery { (_, query) in query.annotate(with: selection) }
     }
-    
-    /// A new QueryInterfaceRequest which returns distinct rows.
+
+    /// Creates a request which returns distinct rows.
     ///
     ///     // SELECT DISTINCT * FROM players
     ///     var request = Player.all()
@@ -103,90 +115,40 @@ extension QueryInterfaceRequest {
     ///     var request = Player.select(Column("name"))
     ///     request = request.distinct()
     public func distinct() -> QueryInterfaceRequest<T> {
-        var query = self.query
-        query.isDistinct = true
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.distinct() }
     }
     
-    /// A new QueryInterfaceRequest with the provided *predicate* added to the
+    /// Creates a request with the provided *predicate* added to the
     /// eventual set of already applied predicates.
     ///
     ///     // SELECT * FROM players WHERE email = 'arthur@example.com'
     ///     var request = Player.all()
     ///     request = request.filter(Column("email") == "arthur@example.com")
     public func filter(_ predicate: SQLExpressible) -> QueryInterfaceRequest<T> {
-        return QueryInterfaceRequest(query: query.mapWhereExpression { (db, expression) in
-            if let expression = expression {
-                return expression && predicate.sqlExpression
-            } else {
-                return predicate.sqlExpression
-            }
-        })
+        return mapQuery { (_, query) in query.filter(predicate) }
     }
     
-    /// A new QueryInterfaceRequest with the provided *predicate* added to the
-    /// eventual set of already applied predicates.
+    /// Creates a request that matches nothing.
     ///
-    ///     // SELECT * FROM players WHERE email = 'arthur@example.com'
+    ///     // SELECT * FROM players WHERE 0
     ///     var request = Player.all()
-    ///     request = request.filter(sql: "email = ?", arguments: ["arthur@example.com"])
-    public func filter(sql: String, arguments: StatementArguments? = nil) -> QueryInterfaceRequest<T> {
-        return filter(SQLExpressionLiteral(sql, arguments: arguments))
+    ///     request = request.none()
+    public func none() -> QueryInterfaceRequest<T> {
+        return mapQuery { (_, query) in query.none() }
     }
-    
-    /// A new QueryInterfaceRequest grouped according to *expressions*.
-    public func group(_ expressions: SQLExpressible...) -> QueryInterfaceRequest<T> {
-        return group(expressions)
-    }
-    
-    /// A new QueryInterfaceRequest grouped according to *expressions*.
+
+    /// Creates a request grouped according to *expressions*.
     public func group(_ expressions: [SQLExpressible]) -> QueryInterfaceRequest<T> {
-        var query = self.query
-        query.groupByExpressions = expressions.map { $0.sqlExpression }
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.group(expressions) }
     }
     
-    /// A new QueryInterfaceRequest with a new grouping.
-    public func group(sql: String, arguments: StatementArguments? = nil) -> QueryInterfaceRequest<T> {
-        return group(SQLExpressionLiteral(sql, arguments: arguments))
-    }
-    
-    /// A new QueryInterfaceRequest with the provided *predicate* added to the
+    /// Creates a request with the provided *predicate* added to the
     /// eventual set of already applied predicates.
     public func having(_ predicate: SQLExpressible) -> QueryInterfaceRequest<T> {
-        var query = self.query
-        if let havingExpression = query.havingExpression {
-            query.havingExpression = (havingExpression && predicate).sqlExpression
-        } else {
-            query.havingExpression = predicate.sqlExpression
-        }
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.having(predicate) }
     }
     
-    /// A new QueryInterfaceRequest with the provided *sql* added to the
-    /// eventual set of already applied predicates.
-    public func having(sql: String, arguments: StatementArguments? = nil) -> QueryInterfaceRequest<T> {
-        return having(SQLExpressionLiteral(sql, arguments: arguments))
-    }
-    
-    /// A new QueryInterfaceRequest with the provided *orderings*.
-    ///
-    ///     // SELECT * FROM players ORDER BY name
-    ///     var request = Player.all()
-    ///     request = request.order(Column("name"))
-    ///
-    /// Any previous ordering is replaced:
-    ///
-    ///     // SELECT * FROM players ORDER BY name
-    ///     request
-    ///         .order(Column("email"))
-    ///         .reversed()
-    ///         .order(Column("name"))
-    public func order(_ orderings: SQLOrderingTerm...) -> QueryInterfaceRequest<T> {
-        return order(orderings)
-    }
-    
-    /// A new QueryInterfaceRequest with the provided *orderings*.
+    /// Creates a request with the provided *orderings*.
     ///
     ///     // SELECT * FROM players ORDER BY name
     ///     var request = Player.all()
@@ -200,63 +162,69 @@ extension QueryInterfaceRequest {
     ///         .reversed()
     ///         .order([Column("name")])
     public func order(_ orderings: [SQLOrderingTerm]) -> QueryInterfaceRequest<T> {
-        var query = self.query
-        query.orderings = orderings
-        query.isReversed = false
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.order(orderings) }
     }
     
-    /// A new QueryInterfaceRequest with the provided *sql* used for sorting.
-    ///
-    ///     // SELECT * FROM players ORDER BY name
-    ///     var request = Player.all()
-    ///     request = request.order(sql: "name")
-    ///
-    /// Any previous ordering is replaced:
-    ///
-    ///     // SELECT * FROM players ORDER BY name
-    ///     request
-    ///         .order(sql: "email")
-    ///         .order(sql: "name")
-    public func order(sql: String, arguments: StatementArguments? = nil) -> QueryInterfaceRequest<T> {
-        return order([SQLExpressionLiteral(sql, arguments: arguments)])
-    }
-    
-    /// A new QueryInterfaceRequest sorted in reversed order.
+    /// Creates a request that reverses applied orderings. If no ordering
+    /// was applied, the returned request is identical.
     ///
     ///     // SELECT * FROM players ORDER BY name DESC
     ///     var request = Player.all().order(Column("name"))
     ///     request = request.reversed()
+    ///
+    ///     // SELECT * FROM players
+    ///     var request = Player.all()
+    ///     request = request.reversed()
     public func reversed() -> QueryInterfaceRequest<T> {
-        var query = self.query
-        query.isReversed = !query.isReversed
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.reversed() }
     }
     
-    /// A QueryInterfaceRequest which fetches *limit* rows, starting
+    /// Creates a request which fetches *limit* rows, starting
     /// at *offset*.
     ///
     ///     // SELECT * FROM players LIMIT 1
     ///     var request = Player.all()
     ///     request = request.limit(1)
     public func limit(_ limit: Int, offset: Int? = nil) -> QueryInterfaceRequest<T> {
-        var query = self.query
-        query.limit = SQLLimit(limit: limit, offset: offset)
-        return QueryInterfaceRequest(query: query)
+        return mapQuery { (_, query) in query.limit(limit, offset: offset) }
+    }
+    
+    /// Creates a request that allows you to define unambiguous expressions
+    /// based on the fetched record.
+    ///
+    /// In the example below, the "team.avgScore < player.score" condition in
+    /// the ON clause could be not achieved without table aliases.
+    ///
+    ///     struct Player: TableRecord {
+    ///         static let team = belongsTo(Team.self)
+    ///     }
+    ///
+    ///     // SELECT player.*, team.*
+    ///     // JOIN team ON ... AND team.avgScore < player.score
+    ///     let playerAlias = TableAlias()
+    ///     let request = Player
+    ///         .all()
+    ///         .aliased(playerAlias)
+    ///         .including(required: Player.team.filter(Column("avgScore") < playerAlias[Column("score")])
+    public func aliased(_ alias: TableAlias) -> QueryInterfaceRequest {
+        return mapQuery { (_, query) in
+            let userProvidedAlias = alias.userProvidedAlias
+            defer {
+                // Allow user to explicitely rename (TODO: test)
+                alias.userProvidedAlias = userProvidedAlias
+            }
+            return query.qualified(with: &alias.qualifier)
+        }
     }
 }
 
 extension QueryInterfaceRequest where T: TableRecord {
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM players WHERE id = 1
     ///     var request = Player.all()
     ///     request = request.filter(key: 1)
-    ///
-    /// The selection defaults to all columns. This default can be changed for
-    /// all requests by the `TableRecord.databaseSelection` property, or
-    /// for individual requests with the `TableRecord.select` method.
     public func filter<PrimaryKeyType: DatabaseValueConvertible>(key: PrimaryKeyType?) -> QueryInterfaceRequest<T> {
         guard let key = key else {
             return T.none()
@@ -265,15 +233,11 @@ extension QueryInterfaceRequest where T: TableRecord {
         return filter(keys: [key])
     }
 
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM players WHERE id IN (1, 2, 3)
     ///     var request = Player.all()
     ///     request = request.filter(keys: [1, 2, 3])
-    ///
-    /// The selection defaults to all columns. This default can be changed for
-    /// all requests by the `TableRecord.databaseSelection` property, or
-    /// for individual requests with the `TableRecord.select` method.
     public func filter<Sequence: Swift.Sequence>(keys: Sequence) -> QueryInterfaceRequest<T> where Sequence.Element: DatabaseValueConvertible {
         let keys = Array(keys)
         let makePredicate: (Column) -> SQLExpression
@@ -285,20 +249,16 @@ extension QueryInterfaceRequest where T: TableRecord {
         default:
             makePredicate = { keys.contains($0) }
         }
-
-        return QueryInterfaceRequest(query: query.mapWhereExpression { (db, expression) in
+        
+        return mapQuery { (db, query) in
             let primaryKey = try db.primaryKey(T.databaseTableName)
             GRDBPrecondition(primaryKey.columns.count == 1, "Requesting by key requires a single-column primary key in the table \(T.databaseTableName)")
             let keysPredicate = makePredicate(Column(primaryKey.columns[0]))
-            if let expression = expression {
-                return expression && keysPredicate
-            } else {
-                return keysPredicate
-            }
-        })
+            return query.filter(keysPredicate)
+        }
     }
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM passports WHERE personId = 1 AND countryCode = 'FR'
     ///     var request = Player.all()
@@ -306,10 +266,6 @@ extension QueryInterfaceRequest where T: TableRecord {
     ///
     /// When executed, this request raises a fatal error if there is no unique
     /// index on the key columns.
-    ///
-    /// The selection defaults to all columns. This default can be changed for
-    /// all requests by the `TableRecord.databaseSelection` property, or
-    /// for individual requests with the `TableRecord.select` method.
     public func filter(key: [String: DatabaseValueConvertible?]?) -> QueryInterfaceRequest<T> {
         guard let key = key else {
             return T.none()
@@ -318,23 +274,19 @@ extension QueryInterfaceRequest where T: TableRecord {
         return filter(keys: [key])
     }
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM passports WHERE (personId = 1 AND countryCode = 'FR') OR ...
     ///     let request = Passport.filter(keys: [["personId": 1, "countryCode": "FR"], ...])
     ///
     /// When executed, this request raises a fatal error if there is no unique
     /// index on the key columns.
-    ///
-    /// The selection defaults to all columns. This default can be changed for
-    /// all requests by the `TableRecord.databaseSelection` property, or
-    /// for individual requests with the `TableRecord.select` method.
     public func filter(keys: [[String: DatabaseValueConvertible?]]) -> QueryInterfaceRequest<T> {
         guard !keys.isEmpty else {
             return T.none()
         }
         
-        return QueryInterfaceRequest(query: query.mapWhereExpression { (db, expression) in
+        return mapQuery { (db, query) in
             let keyPredicates: [SQLExpression] = try keys.map { key in
                 // Prevent filter(db, keys: [[:]])
                 GRDBPrecondition(!key.isEmpty, "Invalid empty key dictionary")
@@ -355,13 +307,8 @@ extension QueryInterfaceRequest where T: TableRecord {
             }
             
             let keysPredicate = SQLBinaryOperator.or.join(keyPredicates)! // not nil because keyPredicates is not empty
-            
-            if let expression = expression {
-                return expression && keysPredicate
-            } else {
-                return keysPredicate
-            }
-        })
+            return query.filter(keysPredicate)
+        }
     }
 }
 
@@ -376,16 +323,16 @@ extension QueryInterfaceRequest where RowDecoder: MutablePersistableRecord {
     /// - throws: A DatabaseError is thrown whenever an SQLite error occurs.
     @discardableResult
     public func deleteAll(_ db: Database) throws -> Int {
-        try query.makeDeleteStatement(db).execute()
+        try query(db).makeDeleteStatement(db).execute()
         return db.changesCount
     }
 }
 
 extension TableRecord {
     
-    // MARK: Request Derivation
+    // MARK: Fetch Requests
     
-    /// Creates a QueryInterfaceRequest which fetches all records.
+    /// Creates a request which fetches all records.
     ///
     ///     // SELECT * FROM players
     ///     let request = Player.all()
@@ -395,17 +342,17 @@ extension TableRecord {
     /// for individual requests with the `TableRecord.select` method.
     public static func all() -> QueryInterfaceRequest<Self> {
         let query = QueryInterfaceQuery(
-            select: databaseSelection,
-            from: .table(name: databaseTableName, alias: nil))
+            source: .table(databaseTableName),
+            selection: databaseSelection)
         return QueryInterfaceRequest(query: query)
     }
     
-    /// Creates a QueryInterfaceRequest which fetches no record.
+    /// Creates a request which fetches no record.
     public static func none() -> QueryInterfaceRequest<Self> {
-        return filter(false)
+        return all().none()
     }
     
-    /// Creates a QueryInterfaceRequest which selects *selection*.
+    /// Creates a request which selects *selection*.
     ///
     ///     // SELECT id, email FROM players
     ///     let request = Player.select(Column("id"), Column("email"))
@@ -413,7 +360,7 @@ extension TableRecord {
         return all().select(selection)
     }
     
-    /// Creates a QueryInterfaceRequest which selects *selection*.
+    /// Creates a request which selects *selection*.
     ///
     ///     // SELECT id, email FROM players
     ///     let request = Player.select([Column("id"), Column("email")])
@@ -421,7 +368,25 @@ extension TableRecord {
         return all().select(selection)
     }
     
-    /// Creates a QueryInterfaceRequest which selects *sql*.
+    /// Creates a request with columns appended to the default selection.
+    ///
+    /// The selection defaults to all columns. This default can be changed for
+    /// all requests by the `TableRecord.databaseSelection` property, or
+    /// for individual requests with the `TableRecord.select` method.
+    public static func annotate(with selection: SQLSelectable...) -> QueryInterfaceRequest<Self> {
+        return all().annotate(with: selection)
+    }
+
+    /// Creates a request with columns appended to the default selection.
+    ///
+    /// The selection defaults to all columns. This default can be changed for
+    /// all requests by the `TableRecord.databaseSelection` property, or
+    /// for individual requests with the `TableRecord.select` method.
+    public static func annotate(with selection: [SQLSelectable]) -> QueryInterfaceRequest<Self> {
+        return all().annotate(with: selection)
+    }
+
+    /// Creates a request which selects *sql*.
     ///
     ///     // SELECT id, email FROM players
     ///     let request = Player.select(sql: "id, email")
@@ -429,7 +394,7 @@ extension TableRecord {
         return all().select(sql: sql, arguments: arguments)
     }
     
-    /// Creates a QueryInterfaceRequest with the provided *predicate*.
+    /// Creates a request with the provided *predicate*.
     ///
     ///     // SELECT * FROM players WHERE email = 'arthur@example.com'
     ///     let request = Player.filter(Column("email") == "arthur@example.com")
@@ -441,7 +406,7 @@ extension TableRecord {
         return all().filter(predicate)
     }
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM players WHERE id = 1
     ///     let request = Player.filter(key: 1)
@@ -453,7 +418,7 @@ extension TableRecord {
         return all().filter(key: key)
     }
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM players WHERE id IN (1, 2, 3)
     ///     let request = Player.filter(keys: [1, 2, 3])
@@ -465,7 +430,7 @@ extension TableRecord {
         return all().filter(keys: keys)
     }
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM passports WHERE personId = 1 AND countryCode = 'FR'
     ///     let request = Passport.filter(key: ["personId": 1, "countryCode": "FR"])
@@ -480,7 +445,7 @@ extension TableRecord {
         return all().filter(key: key)
     }
     
-    /// Creates a QueryInterfaceRequest with the provided primary key *predicate*.
+    /// Creates a request with the provided primary key *predicate*.
     ///
     ///     // SELECT * FROM passports WHERE (personId = 1 AND countryCode = 'FR') OR ...
     ///     let request = Passport.filter(keys: [["personId": 1, "countryCode": "FR"], ...])
@@ -495,7 +460,7 @@ extension TableRecord {
         return all().filter(keys: keys)
     }
     
-    /// Creates a QueryInterfaceRequest with the provided *predicate*.
+    /// Creates a request with the provided *predicate*.
     ///
     ///     // SELECT * FROM players WHERE email = 'arthur@example.com'
     ///     let request = Player.filter(sql: "email = ?", arguments: ["arthur@example.com"])
@@ -507,7 +472,7 @@ extension TableRecord {
         return all().filter(sql: sql, arguments: arguments)
     }
     
-    /// Creates a QueryInterfaceRequest sorted according to the
+    /// Creates a request sorted according to the
     /// provided *orderings*.
     ///
     ///     // SELECT * FROM players ORDER BY name
@@ -520,7 +485,7 @@ extension TableRecord {
         return all().order(orderings)
     }
     
-    /// Creates a QueryInterfaceRequest sorted according to the
+    /// Creates a request sorted according to the
     /// provided *orderings*.
     ///
     ///     // SELECT * FROM players ORDER BY name
@@ -533,7 +498,7 @@ extension TableRecord {
         return all().order(orderings)
     }
     
-    /// Creates a QueryInterfaceRequest sorted according to *sql*.
+    /// Creates a request sorted according to *sql*.
     ///
     ///     // SELECT * FROM players ORDER BY name
     ///     let request = Player.order(sql: "name")
@@ -545,7 +510,7 @@ extension TableRecord {
         return all().order(sql: sql, arguments: arguments)
     }
     
-    /// Creates a QueryInterfaceRequest which fetches *limit* rows, starting at
+    /// Creates a request which fetches *limit* rows, starting at
     /// *offset*.
     ///
     ///     // SELECT * FROM players LIMIT 1
@@ -556,5 +521,25 @@ extension TableRecord {
     /// for individual requests with the `TableRecord.select` method.
     public static func limit(_ limit: Int, offset: Int? = nil) -> QueryInterfaceRequest<Self> {
         return all().limit(limit, offset: offset)
+    }
+    
+    /// Creates a request that allows you to define unambiguous expressions
+    /// based on the fetched record.
+    ///
+    /// In the example below, the "team.avgScore < player.score" condition in
+    /// the ON clause could be not achieved without table aliases.
+    ///
+    ///     struct Player: TableRecord {
+    ///         static let team = belongsTo(Team.self)
+    ///     }
+    ///
+    ///     // SELECT player.*, team.*
+    ///     // JOIN team ON ... AND team.avgScore < player.score
+    ///     let playerAlias = TableAlias()
+    ///     let request = Player
+    ///         .aliased(playerAlias)
+    ///         .including(required: Player.team.filter(Column("avgScore") < playerAlias[Column("score")])
+    public static func aliased(_ alias: TableAlias) -> QueryInterfaceRequest<Self> {
+        return all().aliased(alias)
     }
 }

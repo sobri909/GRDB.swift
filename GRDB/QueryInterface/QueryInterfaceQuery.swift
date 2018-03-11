@@ -1,61 +1,37 @@
-struct DatabasePromise<T> {
-    let resolve: (Database) throws -> T
-    
-    init(value: T) {
-        self.resolve = { _ in value }
-    }
-    
-    init(_ resolve: @escaping (Database) throws -> T) {
-        self.resolve = resolve
-    }
-    
-    func map(_ transform: @escaping (Database, T) throws -> T) -> DatabasePromise {
-        return DatabasePromise { db in
-            try transform(db, self.resolve(db))
-        }
-    }
-}
-
 struct QueryInterfaceQuery {
+    var source: SQLSource
     var selection: [SQLSelectable]
+    var whereExpression: SQLExpression?
     var isDistinct: Bool
-    var source: SQLSource?
-    var wherePromise: DatabasePromise<SQLExpression?>
     var groupByExpressions: [SQLExpression]
-    var orderings: [SQLOrderingTerm]
-    var isReversed: Bool
     var havingExpression: SQLExpression?
+    var ordering: QueryOrdering
     var limit: SQLLimit?
+    var rowAdapter: RowAdapter?
     
     init(
-        select selection: [SQLSelectable],
+        source: SQLSource,
+        selection: [SQLSelectable],
+        whereExpression: SQLExpression? = nil,
         isDistinct: Bool = false,
-        from source: SQLSource? = nil,
-        filter whereExpression: SQLExpression? = nil,
-        groupBy groupByExpressions: [SQLExpression] = [],
-        orderBy orderings: [SQLOrderingTerm] = [],
-        isReversed: Bool = false,
-        having havingExpression: SQLExpression? = nil,
-        limit: SQLLimit? = nil)
+        groupByExpressions: [SQLExpression] = [],
+        havingExpression: SQLExpression? = nil,
+        ordering: QueryOrdering = QueryOrdering(),
+        limit: SQLLimit? = nil,
+        rowAdapter: RowAdapter? = nil)
     {
-        self.selection = selection
-        self.isDistinct = isDistinct
         self.source = source
-        self.wherePromise = DatabasePromise(value: whereExpression)
+        self.selection = selection
+        self.whereExpression = whereExpression
+        self.isDistinct = isDistinct
         self.groupByExpressions = groupByExpressions
-        self.orderings = orderings
-        self.isReversed = isReversed
         self.havingExpression = havingExpression
+        self.ordering = ordering
         self.limit = limit
+        self.rowAdapter = rowAdapter
     }
     
-    func mapWhereExpression(_ transform: @escaping (Database, SQLExpression?) throws -> SQLExpression?) -> QueryInterfaceQuery {
-        var query = self
-        query.wherePromise = query.wherePromise.map(transform)
-        return query
-    }
-    
-    func sql(_ db: Database, _ arguments: inout StatementArguments?) throws -> String {
+    func sql(_ arguments: inout StatementArguments?) -> String {
         var sql = "SELECT"
         
         if isDistinct {
@@ -65,11 +41,9 @@ struct QueryInterfaceQuery {
         assert(!selection.isEmpty)
         sql += " " + selection.map { $0.resultColumnSQL(&arguments) }.joined(separator: ", ")
         
-        if let source = source {
-            sql += try " FROM " + source.sourceSQL(db, &arguments)
-        }
+        sql += " FROM " + source.sourceSQL(&arguments)
         
-        if let whereExpression = try wherePromise.resolve(db) {
+        if let whereExpression = whereExpression {
             sql += " WHERE " + whereExpression.expressionSQL(&arguments)
         }
         
@@ -81,7 +55,7 @@ struct QueryInterfaceQuery {
             sql += " HAVING " + havingExpression.expressionSQL(&arguments)
         }
         
-        let orderings = self.queryOrderings
+        let orderings = self.resolvedOrderings
         if !orderings.isEmpty {
             sql += " ORDER BY " + orderings.map { $0.orderingTermSQL(&arguments) }.joined(separator: ", ")
         }
@@ -107,16 +81,17 @@ struct QueryInterfaceQuery {
         var sql = "DELETE"
         var arguments: StatementArguments? = StatementArguments()
         
-        if let source = source {
-            sql += try " FROM " + source.sourceSQL(db, &arguments)
+        guard source.isTable else {
+            fatalError("Can't delete joined query")
         }
+        sql += " FROM " + source.sourceSQL(&arguments)
         
-        if let whereExpression = try wherePromise.resolve(db) {
+        if let whereExpression = whereExpression {
             sql += " WHERE " + whereExpression.expressionSQL(&arguments)
         }
         
         if let limit = limit {
-            let orderings = self.queryOrderings
+            let orderings = self.resolvedOrderings
             if !orderings.isEmpty {
                 sql += " ORDER BY " + orderings.map { $0.orderingTermSQL(&arguments) }.joined(separator: ", ")
             }
@@ -133,35 +108,171 @@ struct QueryInterfaceQuery {
         return statement
     }
     
-    private var queryOrderings: [SQLOrderingTerm] {
-        if isReversed {
-            if orderings.isEmpty {
-                // https://www.sqlite.org/lang_createtable.html#rowid
-                //
-                // > The rowid value can be accessed using one of the special
-                // > case-independent names "rowid", "oid", or "_rowid_" in
-                // > place of a column name. If a table contains a user defined
-                // > column named "rowid", "oid" or "_rowid_", then that name
-                // > always refers the explicitly declared column and cannot be
-                // > used to retrieve the integer rowid value.
-                //
-                // Here we assume that rowid is not a custom column.
-                // TODO: support for user-defined rowid column.
-                // TODO: support for WITHOUT ROWID tables.
-                return [Column.rowID.desc]
-            } else {
-                return orderings.map { $0.reversed }
-            }
-        } else {
-            return orderings
-        }
+    private var resolvedOrderings: [SQLOrderingTerm] {
+        return ordering.resolvedOrderings
     }
     
     /// Remove ordering
     var unorderedQuery: QueryInterfaceQuery {
         var query = self
-        query.isReversed = false
-        query.orderings = []
+        query.ordering = QueryOrdering()
+        return query
+    }
+    
+    // MARK: Join Support
+    
+    var qualifier: SQLTableQualifier? {
+        return source.qualifier
+    }
+    
+    var allQualifiers: [SQLTableQualifier] {
+        return source.allQualifiers
+    }
+    
+    // Input: SELECT * FROM foo ORDER BY bar
+    // Output: SELECT foo.* FROM foo ORDER BY foo.bar
+    func qualified(with qualifier: inout SQLTableQualifier) -> QueryInterfaceQuery {
+        let qualifiedSource = source.qualified(with: &qualifier)
+        let qualifiedSelection = selection.map { $0.qualifiedSelectable(with: qualifier) }
+        let qualifiedWhereExpression = whereExpression?.qualifiedExpression(with: qualifier)
+        let qualifiedGroupByExpressions = groupByExpressions.map { $0.qualifiedExpression(with: qualifier) }
+        let qualifiedOrdering = ordering.qualified(with: qualifier)
+        let qualifiedHavingExpression = havingExpression?.qualifiedExpression(with: qualifier)
+        
+        return QueryInterfaceQuery(
+            source: qualifiedSource,
+            selection: qualifiedSelection,
+            whereExpression: qualifiedWhereExpression,
+            isDistinct: isDistinct,
+            groupByExpressions: qualifiedGroupByExpressions,
+            havingExpression: qualifiedHavingExpression,
+            ordering: qualifiedOrdering,
+            limit: limit,
+            rowAdapter: rowAdapter)
+    }
+}
+
+extension QueryInterfaceQuery {
+    
+    func select(_ selection: [SQLSelectable]) -> QueryInterfaceQuery {
+        assert(rowAdapter == nil, "can't change selection after rowAdapter has been defined since rowAdapter relies on column offsets")
+        
+        // Apply qualifier if present
+        let newSelection: [SQLSelectable]
+        if let qualifier = qualifier {
+            newSelection = selection.map { $0.qualifiedSelectable(with: qualifier) }
+        } else {
+            newSelection = selection
+        }
+        
+        var query = self
+        query.selection = newSelection
+        return query
+    }
+    
+    func annotate(with selection: [SQLSelectable]) -> QueryInterfaceQuery {
+        assert(rowAdapter == nil, "can't change selection after rowAdapter has been defined since rowAdapter relies on column offsets")
+        
+        // Apply qualifier if present
+        let newSelection: [SQLSelectable]
+        if let qualifier = qualifier {
+            newSelection = selection.map { $0.qualifiedSelectable(with: qualifier) }
+        } else {
+            newSelection = selection
+        }
+        
+        var query = self
+        query.selection += newSelection
+        return query
+    }
+    
+    func distinct() -> QueryInterfaceQuery {
+        var query = self
+        query.isDistinct = true
+        return query
+    }
+    
+    func filter(_ predicate: SQLExpressible) -> QueryInterfaceQuery {
+        // Apply qualifier if present
+        let newPredicate: SQLExpression
+        if let qualifier = qualifier {
+            newPredicate = predicate.sqlExpression.qualifiedExpression(with: qualifier)
+        } else {
+            newPredicate = predicate.sqlExpression
+        }
+        
+        var query = self
+        if let expression = query.whereExpression {
+            query.whereExpression = expression && newPredicate
+        } else {
+            query.whereExpression = newPredicate
+        }
+        return query
+    }
+    
+    func none() -> QueryInterfaceQuery {
+        var query = self
+        query.whereExpression = false.sqlExpression
+        return query
+    }
+
+    func group(_ expressions: [SQLExpressible]) -> QueryInterfaceQuery {
+        // Apply qualifier if present
+        let newGroupByExpressions: [SQLExpression]
+        if let qualifier = qualifier {
+            newGroupByExpressions = expressions.map { $0.sqlExpression.qualifiedExpression(with: qualifier) }
+        } else {
+            newGroupByExpressions = expressions.map { $0.sqlExpression }
+        }
+        
+        var query = self
+        query.groupByExpressions = newGroupByExpressions
+        return query
+    }
+    
+    func having(_ predicate: SQLExpressible) -> QueryInterfaceQuery {
+        // Apply qualifier if present
+        let newPredicate: SQLExpression
+        if let qualifier = qualifier {
+            newPredicate = predicate.sqlExpression.qualifiedExpression(with: qualifier)
+        } else {
+            newPredicate = predicate.sqlExpression
+        }
+
+        var query = self
+        if let havingExpression = query.havingExpression {
+            query.havingExpression = havingExpression && newPredicate
+        } else {
+            query.havingExpression = newPredicate
+        }
+        return query
+    }
+    
+    func order(_ orderings: [SQLOrderingTerm]) -> QueryInterfaceQuery {
+        return order(QueryOrdering(orderings: orderings))
+    }
+    
+    func reversed() -> QueryInterfaceQuery {
+        return order(ordering.reversed())
+    }
+    
+    private func order(_ ordering: QueryOrdering) -> QueryInterfaceQuery {
+        // Apply qualifier if present
+        let newOrdering: QueryOrdering
+        if let qualifier = qualifier {
+            newOrdering = ordering.qualified(with: qualifier)
+        } else {
+            newOrdering = ordering
+        }
+        
+        var query = self
+        query.ordering = newOrdering
+        return query
+    }
+    
+    func limit(_ limit: Int, offset: Int?) -> QueryInterfaceQuery {
+        var query = self
+        query.limit = SQLLimit(limit: limit, offset: offset)
         return query
     }
 }
@@ -169,10 +280,10 @@ struct QueryInterfaceQuery {
 extension QueryInterfaceQuery {
     func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?) {
         var arguments: StatementArguments? = StatementArguments()
-        let sql = try self.sql(db, &arguments)
+        let sql = self.sql(&arguments)
         let statement = try db.makeSelectStatement(sql)
         try statement.setArgumentsWithValidation(arguments!)
-        return (statement, nil)
+        return (statement, rowAdapter)
     }
     
     func fetchCount(_ db: Database) throws -> Int {
@@ -188,10 +299,8 @@ extension QueryInterfaceQuery {
         // Can we intersect the region with rowIds?
         //
         // Give up unless request feeds from a single database table
-        guard let source = source else {
-            return region
-        }
-        guard case .table(name: let tableName, alias: _) = source else {
+        guard source.isTable, let tableName = source.tableName else {
+            // TODO: try harder
             return region
         }
         
@@ -202,7 +311,7 @@ extension QueryInterfaceQuery {
         }
         
         // Give up unless there is a where clause
-        guard let whereExpression = try wherePromise.resolve(db) else {
+        guard let whereExpression = whereExpression else {
             return region
         }
         
@@ -223,7 +332,7 @@ extension QueryInterfaceQuery {
             return trivialCountQuery
         }
         
-        guard let source = source, case .table = source else {
+        guard source.isTable else {
             // SELECT ... FROM (something which is not a table)
             return trivialCountQuery
         }
@@ -256,30 +365,342 @@ extension QueryInterfaceQuery {
     // SELECT COUNT(*) FROM (self)
     private var trivialCountQuery: QueryInterfaceQuery {
         return QueryInterfaceQuery(
-            select: [SQLExpressionCount(AllColumns())],
-            from: .query(query: unorderedQuery, alias: nil))
+            source: .query(unorderedQuery),
+            selection: [SQLExpressionCount(AllColumns())])
     }
 }
 
-indirect enum SQLSource {
-    case table(name: String, alias: String?)
-    case query(query: QueryInterfaceQuery, alias: String?)
+extension QueryInterfaceQuery {
+    func chaining(
+        db: Database,
+        chainOp: AssociationChainOperator,
+        rightQuery: AssociationQuery,
+        rightKey: String,
+        mapping: AssociationMapping)
+        throws -> QueryInterfaceQuery
+    {
+        var leftQualifier = SQLTableQualifier()
+        var rightQualifier = SQLTableQualifier()
+        
+        let leftQualifiedQuery = qualified(with: &leftQualifier)
+        let rightQualifiedQuery = rightQuery.qualified(with: &rightQualifier)
+        
+        let leftQualifiedSelection = leftQualifiedQuery.selection
+        let rightQualifiedSelection = rightQualifiedQuery.ownSelection + rightQualifiedQuery.includedSelection
+
+        let leftSelectionWidth = try leftQualifiedSelection
+            .map { try $0.columnCount(db) }
+            .reduce(0, +)
+
+        let leftAdapter = leftQualifiedQuery.rowAdapter ?? RangeRowAdapter(0..<leftSelectionWidth)
+        let chainedAdapter: RowAdapter
+        if rightQualifiedSelection.isEmpty {
+            chainedAdapter = leftAdapter
+        } else if let rightAdapter = rightQualifiedQuery.rowAdapter {
+            let offsettedAdapter = OffsettedAdapter(rightAdapter, offset: leftSelectionWidth)
+            chainedAdapter = leftAdapter.addingScopes([rightKey: offsettedAdapter])
+        } else {
+            let rightOwnSelectionWidth = try rightQualifiedQuery.ownSelection
+                .map { try $0.columnCount(db) }
+                .reduce(0, +)
+            let rightAdapter = RangeRowAdapter(leftSelectionWidth ..< leftSelectionWidth + rightOwnSelectionWidth)
+            chainedAdapter = leftAdapter.addingScopes([rightKey: rightAdapter])
+        }
+        
+        let chainedSelection = leftQualifiedSelection + rightQualifiedSelection
+        
+        let chainedSource = leftQualifiedQuery.source.chaining(
+            db: db,
+            chainOp: chainOp,
+            on: mapping,
+            and: rightQualifiedQuery.onExpression,
+            to: rightQualifiedQuery.source)
+        
+        let chainedOrdering = leftQualifiedQuery.ordering.appending(rightQualifiedQuery.ordering)
+
+        return QueryInterfaceQuery(
+            source: chainedSource,
+            selection: chainedSelection,
+            whereExpression: leftQualifiedQuery.whereExpression,
+            isDistinct: leftQualifiedQuery.isDistinct,
+            groupByExpressions: leftQualifiedQuery.groupByExpressions,
+            havingExpression: leftQualifiedQuery.havingExpression,
+            ordering: chainedOrdering,
+            limit: leftQualifiedQuery.limit,
+            rowAdapter: chainedAdapter)
+    }
+}
+
+// MARK: - QueryOrdering
+
+struct QueryOrdering {
+    private var items: [OrderingItem] = []
+    var isReversed: Bool
     
-    func sourceSQL(_ db: Database, _ arguments: inout StatementArguments?) throws -> String {
-        switch self {
-        case .table(let table, let alias):
-            if let alias = alias {
-                return table.quotedDatabaseIdentifier + " AS " + alias.quotedDatabaseIdentifier
-            } else {
-                return table.quotedDatabaseIdentifier
-            }
-        case .query(let query, let alias):
-            if let alias = alias {
-                return try "(" + query.sql(db, &arguments) + ") AS " + alias.quotedDatabaseIdentifier
-            } else {
-                return try "(" + query.sql(db, &arguments) + ")"
+    private enum OrderingItem {
+        case orderingTerm(SQLOrderingTerm)
+        case queryOrdering(QueryOrdering)
+        
+        func qualified(with qualifier: SQLTableQualifier) -> OrderingItem {
+            switch self {
+            case .orderingTerm(let orderingTerm):
+                return .orderingTerm(orderingTerm.qualifiedOrdeding(with: qualifier))
+            case .queryOrdering(let queryOrdering):
+                return .queryOrdering(queryOrdering.qualified(with: qualifier))
             }
         }
+        
+        func reversed() -> OrderingItem {
+            switch self {
+            case .orderingTerm(let orderingTerm):
+                return .orderingTerm(orderingTerm.reversed)
+            case .queryOrdering(let queryOrdering):
+                return .queryOrdering(queryOrdering.reversed())
+            }
+        }
+        
+        var resolvedOrderings: [SQLOrderingTerm] {
+            switch self {
+            case .orderingTerm(let orderingTerm):
+                return [orderingTerm]
+            case .queryOrdering(let queryOrdering):
+                return queryOrdering.resolvedOrderings
+            }
+        }
+    }
+    
+    private init(items: [OrderingItem], isReversed: Bool) {
+        self.items = items
+        self.isReversed = isReversed
+    }
+    
+    init() {
+        self.init(
+            items: [],
+            isReversed: false)
+    }
+    
+    init(orderings: [SQLOrderingTerm]) {
+        self.init(
+            items: orderings.map { .orderingTerm($0) },
+            isReversed: false)
+    }
+    
+    func reversed() -> QueryOrdering {
+        return QueryOrdering(
+            items: items,
+            isReversed: !isReversed)
+    }
+    
+    func qualified(with qualifier: SQLTableQualifier) -> QueryOrdering {
+        return QueryOrdering(
+            items: items.map { $0.qualified(with: qualifier) },
+            isReversed: isReversed)
+    }
+    
+    func appending(_ ordering: QueryOrdering) -> QueryOrdering {
+        return QueryOrdering(
+            items: items + [.queryOrdering(ordering)],
+            isReversed: isReversed)
+    }
+    
+    var resolvedOrderings: [SQLOrderingTerm] {
+        if isReversed {
+            return items.flatMap { $0.reversed().resolvedOrderings }
+        } else {
+            return items.flatMap { $0.resolvedOrderings }
+        }
+    }
+}
+
+// MARK: - SQLSource
+
+enum SQLJoinOperator : String {
+    case inner = "JOIN"
+    case left = "LEFT JOIN"
+}
+
+struct SQLSource {
+    private enum Origin {
+        case table(tableName: String, qualifier: SQLTableQualifier?)
+        indirect case query(QueryInterfaceQuery)
+        
+        var qualifier: SQLTableQualifier? {
+            switch self {
+            case .table(_, let qualifier):
+                return qualifier
+            case .query(let query):
+                return query.qualifier
+            }
+        }
+        
+        func sql(_ arguments: inout StatementArguments?) -> String {
+            switch self {
+            case .table(let tableName, let qualifier):
+                if let alias = qualifier?.alias, alias != tableName {
+                    return "\(tableName.quotedDatabaseIdentifier) \(alias.quotedDatabaseIdentifier)"
+                } else {
+                    return "\(tableName.quotedDatabaseIdentifier)"
+                }
+            case .query(let query):
+                return "(\(query.sql(&arguments)))"
+            }
+        }
+        
+        func qualified(with qualifier: inout SQLTableQualifier) -> Origin {
+            switch self {
+            case .table(let tableName, let oldQualifier):
+                if let oldQualifier = oldQualifier {
+                    qualifier = oldQualifier
+                    return self
+                } else {
+                    qualifier.tableName = tableName
+                    return .table(
+                        tableName: tableName,
+                        qualifier: qualifier)
+                }
+            case .query(let query):
+                return .query(query.qualified(with: &qualifier))
+            }
+        }
+    }
+    
+    private struct Join {
+        let chainOp: AssociationChainOperator
+        let tableName: String
+        let qualifier: SQLTableQualifier
+        let onExpression: SQLExpression?
+        let joins: [Join]
+        
+        func sql(_ arguments: inout StatementArguments?, fromOptionalParent: Bool) -> String {
+            let joinOp: SQLJoinOperator
+            switch chainOp {
+            case .optional:
+                joinOp = .left
+            case .required:
+                if fromOptionalParent {
+                    // TODO: chainOptionalRequired
+                    fatalError("Not implemented: chaining a required association behind an optional association")
+                }
+                joinOp = .inner
+            }
+            
+            var sql = joinOp.rawValue
+            
+            if let alias = qualifier.alias, alias != tableName {
+                sql += " \(tableName.quotedDatabaseIdentifier) \(alias.quotedDatabaseIdentifier)"
+            } else {
+                sql += " \(tableName.quotedDatabaseIdentifier)"
+            }
+            
+            if let onExpression = onExpression {
+                sql += " ON " + onExpression.expressionSQL(&arguments)
+            }
+            
+            let isOptional = fromOptionalParent || joinOp == .left
+            return ([sql] + joins.map { $0.sql(&arguments, fromOptionalParent: isOptional) }).joined(separator: " ")
+        }
+        
+        var allQualifiers: [SQLTableQualifier] {
+            return [qualifier] + joins.flatMap { $0.allQualifiers }
+        }
+    }
+    
+    private let origin: Origin
+    private let joins: [Join]
+    
+    /// True if source is a simple table
+    var isTable: Bool {
+        switch origin {
+        case .table:
+            return joins.isEmpty
+        default:
+            return false
+        }
+    }
+    
+    /// An alias or an actual table name
+    var qualifiedName: String {
+        switch origin {
+        case .table(let tableName, let qualifier):
+            return qualifier?.qualifiedName ?? tableName
+        case .query(let query):
+            return query.source.qualifiedName
+        }
+    }
+    
+    /// An actual table name, not an alias
+    var tableName: String? {
+        switch origin {
+        case .table(let tableName, _):
+            return tableName
+        case .query(let query):
+            return query.source.tableName
+        }
+    }
+    
+    var qualifier: SQLTableQualifier? {
+        return origin.qualifier
+    }
+    
+    var allQualifiers: [SQLTableQualifier] {
+        guard let qualifier = origin.qualifier else {
+            return []
+        }
+        return [qualifier] + joins.flatMap { $0.allQualifiers }
+    }
+    
+    static func table(_ tableName: String) -> SQLSource {
+        return SQLSource(
+            origin: .table(tableName: tableName, qualifier: nil),
+            joins: [])
+    }
+    
+    static func query(_ query: QueryInterfaceQuery) -> SQLSource {
+        return SQLSource(
+            origin: .query(query),
+            joins: [])
+    }
+    
+    // - precondition: sources are qualified
+    func chaining(
+        db: Database,
+        chainOp: AssociationChainOperator,
+        on mapping: AssociationMapping,
+        and andExpression: SQLExpression?,
+        to right: SQLSource) -> SQLSource
+    {
+        guard case .table(_, let lq) = origin, let leftQualifier = lq else {
+            fatalError("left query is not qualified")
+        }
+        guard case .table(let rightTableName, let rq) = right.origin, let rightQualifier = rq else {
+            fatalError("right query is not qualified")
+        }
+        
+        let leftAlias = TableAlias(qualifier: leftQualifier)
+        let rightAlias = TableAlias(qualifier: rightQualifier)
+        let mappingExpression = mapping(leftAlias, rightAlias)?.sqlExpression
+        
+        let joinExpression = SQLBinaryOperator.and.join([mappingExpression, andExpression].compactMap { $0 })
+
+        let newJoin = Join(
+            chainOp: chainOp,
+            tableName: rightTableName,
+            qualifier: rightQualifier,
+            onExpression: joinExpression,
+            joins: right.joins)
+        
+        return SQLSource(
+            origin: origin,
+            joins: joins + [newJoin])
+    }
+    
+    func sourceSQL(_ arguments: inout StatementArguments?) -> String {
+        return ([origin.sql(&arguments)] + joins.map { $0.sql(&arguments, fromOptionalParent: false) }).joined(separator: " ")
+    }
+    
+    func qualified(with qualifier: inout SQLTableQualifier) -> SQLSource {
+        return SQLSource(origin: origin.qualified(with: &qualifier), joins: joins)
     }
 }
 

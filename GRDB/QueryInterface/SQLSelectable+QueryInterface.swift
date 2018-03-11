@@ -23,17 +23,15 @@ public struct AllColumns {
 
 extension AllColumns : SQLSelectable {
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public func resultColumnSQL(_ arguments: inout StatementArguments?) -> String {
-        if let qualifierName = qualifier?.name {
+        if let qualifierName = qualifier?.qualifiedName {
             return qualifierName.quotedDatabaseIdentifier + ".*"
         }
         return "*"
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public func countedSQL(_ arguments: inout StatementArguments?) -> String {
         guard qualifier == nil else {
@@ -44,7 +42,6 @@ extension AllColumns : SQLSelectable {
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public func count(distinct: Bool) -> SQLCount? {
         // SELECT DISTINCT * FROM tableName ...
@@ -63,9 +60,8 @@ extension AllColumns : SQLSelectable {
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
-    public func qualified(by qualifier: SQLTableQualifier) -> AllColumns {
+    public func qualifiedSelectable(with qualifier: SQLTableQualifier) -> SQLSelectable {
         if self.qualifier != nil {
             // Never requalify
             return self
@@ -76,13 +72,12 @@ extension AllColumns : SQLSelectable {
     }
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
     /// :nodoc:
     public func columnCount(_ db: Database) throws -> Int {
-        guard let qualifier = qualifier else {
-            fatalError("Can't compute number of columns without a qualifier")
+        guard let tableName = qualifier?.tableName else {
+            fatalError("Can't compute number of columns without a table name")
         }
-        return try db.columns(in: qualifier.tableName).count
+        return try db.columns(in: tableName).count
     }
 }
 
@@ -110,8 +105,8 @@ struct SQLAliasedExpression : SQLSelectable {
         return expression.count(distinct: distinct)
     }
     
-    func qualified(by qualifier: SQLTableQualifier) -> SQLAliasedExpression {
-        return SQLAliasedExpression(expression.qualified(by: qualifier), alias: alias)
+    func qualifiedSelectable(with qualifier: SQLTableQualifier) -> SQLSelectable {
+        return SQLAliasedExpression(expression.qualifiedExpression(with: qualifier), alias: alias)
     }
     
     func columnCount(_ db: Database) throws -> Int {
