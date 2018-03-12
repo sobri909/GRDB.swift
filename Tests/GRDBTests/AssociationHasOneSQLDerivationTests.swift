@@ -357,49 +357,50 @@ class AssociationHasOneSQLDerivationTests: GRDBTestCase {
         }
     }
     
-    func testAssociationFromRequest() throws {
-        let dbQueue = try makeDatabaseQueue()
-        try dbQueue.inDatabase { db in
-            do {
-                let bRequest = B
-                    .filter(Column("name") != nil)
-                    .order(Column("id"))
-                let association = A.hasOne(bRequest)
-                let request = A.including(required: association)
-                try assertEqualSQL(db, request, """
-                    SELECT "a".*, "b".* \
-                    FROM "a" \
-                    JOIN "b" ON (("b"."aid" = "a"."id") AND ("b"."name" IS NOT NULL)) \
-                    ORDER BY "b"."id"
-                    """)
-            }
-            do {
-                let bRequest = RestrictedB
-                    .filter(Column("name") != nil)
-                    .order(Column("id"))
-                let association = A.hasOne(bRequest)
-                let request = A.including(required: association)
-                try assertEqualSQL(db, request, """
-                    SELECT "a".*, "b"."name" \
-                    FROM "a" \
-                    JOIN "b" ON (("b"."aid" = "a"."id") AND ("b"."name" IS NOT NULL)) \
-                    ORDER BY "b"."id"
-                    """)
-            }
-            do {
-                let bRequest = ExtendedB
-                    .select([Column("name")])
-                    .filter(Column("name") != nil)
-                    .order(Column("id"))
-                let association = A.hasOne(bRequest)
-                let request = A.including(required: association)
-                try assertEqualSQL(db, request, """
-                    SELECT "a".*, "b"."name" \
-                    FROM "a" \
-                    JOIN "b" ON (("b"."aid" = "a"."id") AND ("b"."name" IS NOT NULL)) \
-                    ORDER BY "b"."id"
-                    """)
-            }
-        }
-    }
+    // TODO: Test if and only if we really want to build an association from any request
+//    func testAssociationFromRequest() throws {
+//        let dbQueue = try makeDatabaseQueue()
+//        try dbQueue.inDatabase { db in
+//            do {
+//                let bRequest = B
+//                    .filter(Column("name") != nil)
+//                    .order(Column("id"))
+//                let association = A.hasOne(bRequest)
+//                let request = A.including(required: association)
+//                try assertEqualSQL(db, request, """
+//                    SELECT "a".*, "b".* \
+//                    FROM "a" \
+//                    JOIN "b" ON (("b"."aid" = "a"."id") AND ("b"."name" IS NOT NULL)) \
+//                    ORDER BY "b"."id"
+//                    """)
+//            }
+//            do {
+//                let bRequest = RestrictedB
+//                    .filter(Column("name") != nil)
+//                    .order(Column("id"))
+//                let association = A.hasOne(bRequest)
+//                let request = A.including(required: association)
+//                try assertEqualSQL(db, request, """
+//                    SELECT "a".*, "b"."name" \
+//                    FROM "a" \
+//                    JOIN "b" ON (("b"."aid" = "a"."id") AND ("b"."name" IS NOT NULL)) \
+//                    ORDER BY "b"."id"
+//                    """)
+//            }
+//            do {
+//                let bRequest = ExtendedB
+//                    .select([Column("name")])
+//                    .filter(Column("name") != nil)
+//                    .order(Column("id"))
+//                let association = A.hasOne(bRequest)
+//                let request = A.including(required: association)
+//                try assertEqualSQL(db, request, """
+//                    SELECT "a".*, "b"."name" \
+//                    FROM "a" \
+//                    JOIN "b" ON (("b"."aid" = "a"."id") AND ("b"."name" IS NOT NULL)) \
+//                    ORDER BY "b"."id"
+//                    """)
+//            }
+//        }
+//    }
 }

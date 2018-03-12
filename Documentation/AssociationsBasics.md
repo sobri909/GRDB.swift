@@ -767,34 +767,6 @@ let request = Book.joining(required: frenchAuthor)
 
 The request above fetches all books written by a French author.
 
-This example had us derive a filtered association from the raw `Book.author` association. You can also build an association right from a filtered request:
-
-```swift
-struct Book: TableRecord {
-    static func author(from countryCode: String)
-        -> BelongsToAssociation<Book, Person>
-    {
-        let filteredPeople = Person.filter(Column("countryCode") == countryCode)
-        return belongsTo(filteredPeople)
-    }
-}
-
-// The same request for all books written by a French author
-let request = Book.joining(required: Book.author(from: "FR"))
-```
-
-> :warning: **Warning**: you can not currently define an association from a joined request.
->
-> ```swift
-> // Not implemented
-> let peopleWithCountry = Person.including(required: Person.country)
-> let authorWithCountry = Book.belongsTo(peopleWithCountry)
-> let request = Book.including(required: authorWithCountry)
-> ```
->
-> This code compiles, but you'll get a runtime fatal error "Not implemented: defining associations from joined requests". Future versions of GRDB may allow such associations.
-
-
 **There are more filtering options:**
 
 - Filtering on conditions that involve several tables.

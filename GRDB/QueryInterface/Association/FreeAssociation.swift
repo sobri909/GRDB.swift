@@ -38,7 +38,7 @@ struct FreeAssociation<Left, Right> : Association where
 }
 
 extension TableRecord {
-    /// TODO
+    // TODO: Make it public if and only if we really want to build an association from any request
     static func associationTo<Right>(
         _ rightRequest: QueryInterfaceRequest<Right>,
         key: String? = nil,

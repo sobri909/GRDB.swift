@@ -36,8 +36,8 @@ public struct BelongsToAssociation<Left, Right> : Association where
 }
 
 extension TableRecord {
-    /// TODO
-    public static func belongsTo<Right>(
+    // TODO: Make it public if and only if we really want to build an association from any request
+    static func belongsTo<Right>(
         _ rightRequest: QueryInterfaceRequest<Right>,
         key: String? = nil,
         using foreignKey: ForeignKey? = nil)

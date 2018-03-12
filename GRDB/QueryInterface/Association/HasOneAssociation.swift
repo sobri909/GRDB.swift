@@ -36,8 +36,8 @@ public struct HasOneAssociation<Left, Right> : Association where
 }
 
 extension TableRecord {
-    /// TODO
-    public static func hasOne<Right>(
+    // TODO: Make it public if and only if we really want to build an association from any request
+    static func hasOne<Right>(
         _ rightRequest: QueryInterfaceRequest<Right>,
         key: String? = nil,
         using foreignKey: ForeignKey? = nil)
