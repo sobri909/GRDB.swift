@@ -886,7 +886,7 @@ Fetching Values from Associations
 
 We have seen in [Building Requests from Associations] how to define requests that involve several records by the mean of [Joining Methods].
 
-If your application needs to display a list of book with information about their author, country, and cover image, you may build the following joined request:
+If your application needs to display a list of books with information about their author, country, and cover image, you may build the following joined request:
 
 ```swift
 // SELECT book.*, author.*, country.*, coverImage.*
@@ -1056,7 +1056,7 @@ struct BookInfo: FetchableRecord, Decodable {
 let bookInfos = try BookInfo.all().fetchAll(db) // [BookInfo]
 // Prints:
 // ▿ [id:1, authorId:2, title:"Moby-Dick"]
-//   unadapted: [id:1, authorId:2, title:"Moby-Dick", id:2, name:"Herman Melville", countryCode:"US", code:"US", name:"United States of America", id:42, imageId:1, path:"moby-dick.jpg"]
+//   unadapted: [id:1, authorId:2, title:"Moby-Dick", id:2, name:"Herman Melville", countryCode:"US", code:NULL, name:NULL, id:NULL, imageId:NULL, path:NULL]
 //   - author: [id:2, name:"Herman Melville", countryCode:"US"]
 //     - country: [code:NULL, name:NULL]
 //   - coverImage: [id:NULL, imageId:NULL, path:NULL]
