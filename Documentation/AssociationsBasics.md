@@ -1125,6 +1125,8 @@ The APIs that have been described above do not cover the whole topic of joined r
     ```swift
     let request = Author.annotate(with: Author.books.count)
     ```
+
+- There's no HasOneThrough and HasManyThrough association, which would allow to skip intermediate bridge records when building requests.
     
 Those features are not present yet because they hide several very tough challenges. Come [discuss](http://twitter.com/groue) for more information, or if you wish to help turning those features into reality.
 
