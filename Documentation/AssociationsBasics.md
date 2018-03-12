@@ -1081,7 +1081,7 @@ When [Dedocable](#decoding-a-joined-request-with-a-decodable-record) records pro
 The `init(row:)` initializer of the FetchableRecord protocol is what you look after:
 
 ```swift
-struct BookInfo: FetchableRecord, Decodable {
+struct BookInfo: FetchableRecord {
     var book: Book
     var author: Author
     var country: Country?
