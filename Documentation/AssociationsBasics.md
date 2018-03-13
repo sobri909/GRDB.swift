@@ -26,6 +26,7 @@ GRDB Associations
     - [The Structure of a Joined Request]
     - [Decoding a Joined Request with a Decodable Record]
     - [Decoding a Joined Request with FetchableRecord]
+- [Known Issues]
 - [Future Directions]
 
 
@@ -1173,6 +1174,42 @@ let country: Country? = row["country"]
 You can also perform custom navigation in the tree by using *row scopes*. See [Row Adapters] for more information.
 
 
+## Known Issues
+
+**You can't chain a required association on an optional association.**
+
+```swift
+// NOT IMPLEMENTED
+let request = Book
+    .joining(optional: Book.author
+        .including(required: Person.country))
+```
+
+This code compiles, but you'll get a runtime fatal error "Not implemented: chaining a required association behind an optional association". Future versions of GRDB may allow such requests.
+
+**Joining two associations with the same association key at the same level is undefined behavior.**
+
+Since [association keys](#the-structure-of-a-joined-request) are the names of the joined tables unless specified otherwise, this exceptional condition is unfortunately easy to trigger:
+
+```swift
+// UNDEFINED BEHAVIOR
+let request = Book
+    .including(Book.author) // key "author"
+    .including(Book.author) // key "author"
+```
+
+This code currently compiles, and generates valid SQL. But GRDB may change the generated SQL in the future.
+
+To join the same table twice, and make sure GRDB does not modify the fetched results in some future release, make sure no two associations have the same name on a given level:
+
+```swift
+// OK
+let request = Book
+    .including(Book.author.forKey("firstAuthor"))
+    .including(Book.author.forKey("secondAuthor"))
+```
+
+
 ## Future Directions
 
 The APIs that have been described above do not cover the whole topic of joined requests. Among the biggest omissions, there is:
@@ -1264,5 +1301,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 [Decoding a Joined Request with a Decodable Record]: #decoding-a-joined-request-with-a-decodable-record
 [Decoding a Joined Request with FetchableRecord]: #decoding-a-joined-request-with-fetchablerecord
 [Custom Requests]: https://github.com/groue/GRDB.swift/blob/GRDB3-Associations/README.md#custom-requests
+[Known Issues]: #known-issues
 [Future Directions]: #future-directions
 [Row Adapters]: https://github.com/groue/GRDB.swift/blob/GRDB3-Associations/README.md#row-adapters
