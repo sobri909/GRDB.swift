@@ -513,30 +513,28 @@ Sometimes the database schema does not define any foreign key. And sometimes, th
 
 ![AmbiguousForeignKeys](https://cdn.rawgit.com/groue/GRDB.swift/GRDB3-Associations/Documentation/Images/Associations2/AmbiguousForeignKeys.svg)
 
-When this happens to you, you'll know it: GRDB will complain with fatal errors such as "Ambiguous foreign key from book to author", or "Could not infer foreign key from book to author".
+When this happens, associations can't be automatically inferred from the database schema. GRDB will complain with a fatal error such as "Ambiguous foreign key from book to author", or "Could not infer foreign key from book to author".
 
-Your help is needed to avoid those errors:
+Your help is needed. You have to instruct GRDB which foreign key to use:
 
 ```swift
 struct Book: TableRecord {
     // Define foreign keys
-    enum ForeignKeys {
-        static let author = ForeignKey(["authorId"]))
-        static let translator = ForeignKey(["translatorId"]))
-    }
+    static let authorForeignKey = ForeignKey(["authorId"]))
+    static let translatorForeignKey = ForeignKey(["translatorId"]))
     
     // Use foreign keys to define associations:
-    static let author = belongsTo(Person.self, using: ForeignKeys.author)
-    static let translator = belongsTo(Person.self, using: ForeignKeys.translator)
+    static let author = belongsTo(Person.self, using: authorForeignKey)
+    static let translator = belongsTo(Person.self, using: translatorForeignKey)
 }
 ```
 
-The definition of Person's **HasMany** associations can reuse Book's foreign keys:
+Foreign keys are always defined from the table that contains the columns at the origin of the foreign key. Person's symmetric **HasMany** associations reuse Book's foreign keys:
 
 ```swift
 struct Person: TableRecord {
-    static let writtenBooks = hasMany(Book.self, using: Book.ForeignKeys.author)
-    static let translatedBooks = hasMany(Book.self, using: Book.ForeignKeys.translator)
+    static let writtenBooks = hasMany(Book.self, using: Book.authorForeignKey)
+    static let translatedBooks = hasMany(Book.self, using: Book.translatorForeignKey)
 }
 ```
 
@@ -544,14 +542,11 @@ Foreign keys can also be defined from `Column`:
 
 ```swift
 struct Book: TableRecord {
-    enum Columns {
-        static let authorId = Column("authorId")
-        static let translatorId = Column("translatorId")
-    }
-    enum ForeignKeys {
-        static let author = ForeignKey([Columns.authorId]))
-        static let translator = ForeignKey([Columns.translatorId]))
-    }
+    static let authorId = Column("authorId")
+    static let translatorId = Column("translatorId")
+    
+    static let authorForeignKey = ForeignKey([authorId]))
+    static let translatorForeignKey = ForeignKey([translatorId]))
 }
 ```
 
@@ -559,10 +554,8 @@ When the destination table of a foreign key does not define any primary key, you
 
 ```swift
 struct Book: TableRecord {
-    enum ForeignKeys {
-        static let author = ForeignKey(["authorId"], to: ["id"]))
-    }
-    static let author = belongsTo(Person.self, using: ForeignKeys.author)
+    static let authorForeignKey = ForeignKey(["authorId"], to: ["id"]))
+    static let author = belongsTo(Person.self, using: authorForeignKey)
 }
 ```
 
