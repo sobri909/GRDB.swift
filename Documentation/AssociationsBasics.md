@@ -112,11 +112,11 @@ The Types of Associations
 
 GRDB handles three types of associations:
 
-- [BelongsTo]
-- [HasOne]
-- [HasMany]
+- **BelongsTo**
+- **HasOne**
+- **HasMany**
 
-An association declares a link from a record type to another, as in "one book *belongs to* its author". It instructs GRDB to use the foreign keys declared in the database as support for Swift methods.
+An association declares a link from a record type to another, as in "one book **belongs to** its author". It instructs GRDB to use the foreign keys declared in the database as support for Swift methods.
 
 Each one of the three types of associations is appropriate for a particular database situation.
 
@@ -129,7 +129,7 @@ Each one of the three types of associations is appropriate for a particular data
 
 ## BelongsTo
 
-The *BelongsTo* association sets up a one-to-one connection from a record type to another record type, such as each instance of the declaring record "belongs to" an instance of the other record.
+The **BelongsTo** association sets up a one-to-one connection from a record type to another record type, such as each instance of the declaring record "belongs to" an instance of the other record.
 
 For example, if your application includes authors and books, and each book is assigned its author, you'd declare the association this way:
 
@@ -144,7 +144,7 @@ struct Author: TableRecord {
 }
 ```
 
-The BelongsTo association between a book and its author needs that the database table for books has a column that points to the table for authors:
+The **BelongsTo** association between a book and its author needs that the database table for books has a column that points to the table for authors:
 
 ![BelongsToSchema](https://cdn.rawgit.com/groue/GRDB.swift/GRDB3-Associations/Documentation/Images/Associations2/BelongsToSchema.svg)
 
@@ -153,7 +153,7 @@ See [Convention for the BelongsTo Association] for some sample code that defines
 
 ## HasOne
 
-The *HasOne* association also sets up a one-to-one connection from a record type to another record type, but with different semantics, and underlying database schema. It is usually used when an entity has been denormalized into two database tables.
+The **HasOne** association also sets up a one-to-one connection from a record type to another record type, but with different semantics, and underlying database schema. It is usually used when an entity has been denormalized into two database tables.
 
 For example, if your application has one database table for countries, and another for their demographic profiles, you'd declare the association this way:
 
@@ -168,7 +168,7 @@ struct Demographics: TableRecord {
 }
 ```
 
-The HasOne association between a country and its demographics needs that the database table for demographics has a column that points to the table for countries:
+The **HasOne** association between a country and its demographics needs that the database table for demographics has a column that points to the table for countries:
 
 ![HasOneSchema](https://cdn.rawgit.com/groue/GRDB.swift/GRDB3-Associations/Documentation/Images/Associations2/HasOneSchema.svg)
 
@@ -177,7 +177,7 @@ See [Convention for the HasOne Association] for some sample code that defines th
 
 ## HasMany
 
-The *HasMany* association indicates a one-to-many connection between two record types, such as each instance of the declaring record "has many" instances of the other record. You'll often find this association on the other side of a *BelongsTo* association.
+The **HasMany** association indicates a one-to-many connection between two record types, such as each instance of the declaring record "has many" instances of the other record. You'll often find this association on the other side of a **BelongsTo** association.
 
 For example, if your application includes authors and books, and each author is assigned zero or more books, you'd declare the association this way:
 
@@ -191,7 +191,7 @@ struct Book: TableRecord {
 }
 ```
 
-The HasMany association between an author and its books needs that the database table for books has a column that points to the table for authors:
+The **HasMany** association between an author and its books needs that the database table for books has a column that points to the table for authors:
 
 ![HasManySchema](https://cdn.rawgit.com/groue/GRDB.swift/GRDB3-Associations/Documentation/Images/Associations2/HasManySchema.svg)
 
@@ -200,9 +200,9 @@ See [Convention for the HasMany Association] for some sample code that defines t
 
 ## Choosing Between BelongsTo and HasOne
 
-When you want to set up a one-to-one relationship between two record types, you'll need to add a *BelongsTo* association to one, and a *HasOne* association to the other. How do you know which is which?
+When you want to set up a one-to-one relationship between two record types, you'll need to add a **BelongsTo** association to one, and a **HasOne** association to the other. How do you know which is which?
 
-The distinction is in where you place the database foreign key. The record that points to the other one has the *BelongsTo* association. The other record has the *HasOne* association:
+The distinction is in where you place the database foreign key. The record that points to the other one has the **BelongsTo** association. The other record has the **HasOne** association:
 
 A country **has one** demographic profile, a demographic profile **belongs to** a country:
 
@@ -253,7 +253,7 @@ Associations and the Database Schema
 
 **Associations are grounded in the database schema, the way database tables are defined.**
 
-For example, a [BelongsTo] association between a book and its author needs that the database table for books has a column that points to the table for authors.
+For example, a **[BelongsTo]** association between a book and its author needs that the database table for books has a column that points to the table for authors.
 
 GRDB also comes with several *conventions* for defining your database schema.
 
@@ -359,7 +359,7 @@ struct Author: FetchableRecord, TableRecord {
 }
 ```
 
-If the database schema does not follow this convention, and does not define foreign keys between tables, you can still use BelongsTo associations. But your help is needed to define the missing foreign key:
+If the database schema does not follow this convention, and does not define foreign keys between tables, you can still use **BelongsTo** associations. But your help is needed to define the missing foreign key:
 
 ```swift
 struct Book: FetchableRecord, TableRecord {
@@ -478,7 +478,7 @@ struct Author: FetchableRecord, TableRecord {
 }
 ```
 
-If the database schema does not follow this convention, and does not define foreign keys between tables, you can still use HasMany associations. But your help is needed to define the missing foreign key:
+If the database schema does not follow this convention, and does not define foreign keys between tables, you can still use **HasMany** associations. But your help is needed to define the missing foreign key:
 
 ```swift
 struct Author: FetchableRecord, TableRecord {
@@ -531,7 +531,7 @@ struct Book: TableRecord {
 }
 ```
 
-The definition of Person's hasMany associations can reuse Book's foreign keys:
+The definition of Person's **HasMany** associations can reuse Book's foreign keys:
 
 ```swift
 struct Person: TableRecord {
@@ -588,7 +588,7 @@ Fetch requests do not visit the database until you fetch values from them. This 
 
 **You can use associations to build requests for associated records.**
 
-For example, given a `Book.author` [BelongsTo] association, you can build a request for the author of a book. In the example below, we return this request from the `Book.author` property:
+For example, given a `Book.author` **[BelongsTo]** association, you can build a request for the author of a book. In the example below, we return this request from the `Book.author` property:
 
 ```swift
 struct Book: PersistableRecord {
@@ -608,7 +608,7 @@ let book: Book = ...
 let author = try book.author.fetchOne(db)   // Author?
 ```
 
-[HasOne] and [HasMany] associations can also build requests for associated records. For example:
+**[HasOne]** and **[HasMany]** associations can also build requests for associated records. For example:
 
 ```swift
 struct Author: PersistableRecord {
@@ -796,7 +796,7 @@ The request above fetches all books written by a French author.
 - Filtering on conditions that involve several tables.
 - Filtering in the WHERE clause instead of the ON clause (can be useful when you are skilled enough in SQL to make the difference).
 
-Those extra filtering options require [Table Aliases], introduced below.
+Those extra filtering options require **[Table Aliases]**, introduced below.
 
 
 ## Sorting Associations
@@ -832,7 +832,7 @@ let request = Book
 - Sorting on expressions that involve several tables.
 - Changing the order of the sorting terms (such as sorting on author name first, and then publish date).
 
-Those extra sorting options require [Table Aliases], introduced below.
+Those extra sorting options require **[Table Aliases]**, introduced below.
 
 
 ## Table Aliases
@@ -858,7 +858,7 @@ When executed, we'll get a DatabaseError of code 1, "no such column: book.deathD
 
 That is because the "deathDate" column has been used for filtering books, when it is defined on the person database table.
 
-To fix this error, we need a *table alias*:
+To fix this error, we need a **table alias**:
 
 ```swift
 let authorAlias = TableAlias()
@@ -876,7 +876,7 @@ let request = Book
     .filter(Column("publishDate") >= authorAlias[Column("deathDate")])
 ```
 
-Table aliases can also improve control over the ordering of request results. In the example below, we override the [default ordering](#sorting-associations) of associated records by sorting on author names first:
+**Table aliases** can also improve control over the ordering of request results. In the example below, we override the [default ordering](#sorting-associations) of associated records by sorting on author names first:
 
 ```swift
 // SELECT book.*
@@ -888,7 +888,7 @@ let request = Book
     .order(authorAlias[Column("name")], Column("publishDate"))
 ```
 
-Table aliases can be given a name. This name is guaranteed to be used as the table alias in the SQL query. This guarantee lets you write SQL snippets when you need it:
+**Table aliases** can be given a name. This name is guaranteed to be used as the table alias in the SQL query. This guarantee lets you write SQL snippets when you need it:
 
 ```swift
 // SELECT myBook.*
@@ -971,7 +971,7 @@ let request = Book
     .including(optional: Bool.coverImage)
 ```
 
-This request builds the following tree of association keys:
+This request builds the following **tree of association keys**:
 
 ```
          root
@@ -983,7 +983,7 @@ This request builds the following tree of association keys:
 "country"
 ```
 
-Association keys are strings. They are the names of the database tables of associated records (unless you specify otherwise, as we'll see below).
+**Association keys** are strings. They are the names of the database tables of associated records (unless you specify otherwise, as we'll see below).
 
 Those keys are associated with slices in the fetched rows:
 
@@ -1001,12 +1001,12 @@ SELECT book.*, author.*, country.*, coverImage.*
 FROM ...
 ```
 
-We'll see below how this tree of association keys that map on row slices can feed a Decodable record type. We'll then add some details by using FetchableRecord without Decodable support.
+We'll see below how this tree of association keys and row slices can feed a Decodable record type. We'll then add some details by using FetchableRecord without Decodable support.
 
 
 ## Decoding a Joined Request with a Decodable Record
 
-When association keys match the property names of a Decodable record, you get free decoding of joined requests into this record:
+When **association keys** match the property names of a Decodable record, you get free decoding of joined requests into this record:
 
 ```swift
 struct BookInfo: FetchableRecord, Decodable {
@@ -1086,7 +1086,7 @@ let bookInfos = try BookInfo.all().fetchAll(db) // [BookInfo]
 //   - coverImage: [id:NULL, imageId:NULL, path:NULL]
 ```
 
-From the row debugging description, you can see that the fetched row contains book columns, and tree association keys: "author", "country", and "coverImage". The "country" and "coverImage" contains only null values, meaning that they are better decoded in optional properties:
+From the row debugging description, you can see that the fetched row contains book columns, and three **association keys**: "author", "country", and "coverImage". The "country" and "coverImage" contains only null values, meaning that they are better decoded in optional properties:
 
 ```swift
 struct BookInfo: FetchableRecord, Decodable {
@@ -1128,7 +1128,7 @@ You are already familiar with row subscripts to decode [database values](https:/
 let name: String = row["name"]
 ```
 
-When you extract a record instead of a value from a row, GRDB perfoms a breadth-first search in the tree of association keys defined by the joined request. If the key is not found, or only associated with columns that all contain NULL values, an optional record is decoded as nil:
+When you extract a record instead of a value from a row, GRDB perfoms a breadth-first search in the tree of **association keys** defined by the joined request. If the key is not found, or only associated with columns that all contain NULL values, an optional record is decoded as nil:
 
 ```swift
 let author: Author = row["author"]
