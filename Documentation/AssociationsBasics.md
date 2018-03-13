@@ -646,80 +646,74 @@ author.books.rx
 - `joining(optional: association)`
 - `joining(required: association)`
 
-The `including` methods return requests that include the values of the associated record. On the other hand, the `joining` methods return requests that do not include the values of the associated record.
-
-The `optional` variant return requests that allow the associated record to be missing. Conversely, the `required` variant return requests that filter results so that associated record is never missing.
-
-Let's give a few examples, based on those two record types:
+Before we describe them in detail, let's see a few requests they can build:
 
 ```swift
-struct Book: TableRecord {
-    static let author = belongsTo(Author.self)
-}
+/// All books with their respective authors
+let request = Book
+    .including(required: Book.author)
 
-struct Author: TableRecord {
-}
+/// All books with their respective authors, sorted by title
+let request = Book
+    .order(Column("title"))
+    .including(required: Book.author)
+
+/// All books written by a French author
+let request = Book
+    .joining(required: Book.author.filter(Column("countryCode") == "FR"))
 ```
 
-These examples are based on the `Book.author` [BelongsTo] association, but everything that we will learn apply to other associations as well, [HasOne], and [HasMany].
+The pattern is always the same: you start from a base request, that you extend with one of the joining methods.
 
+**To choose the joining method you need, you ask yourself two questions:**
 
-### including(optional:)
+1. Should the associated records be fetched along with the base records?
+    
+    If yes, use `including(...)`. Otherwise, use `joining(...)`.
+    
+    For example, to load all books with their respective authors, you want authors to be fetched, and you use `including`:
+    
+    ```swift
+    /// All books with their respective authors
+    let request = Book
+        .including(required: Book.author)
+    ```
+    
+    On the other side, to load all books written by a French author, you sure need to filter authors, but you don't need them to be present in the fetched results. You prefer `joining`:
+    
+    ```swift
+    /// All books written by a French author
+    let request = Book
+        .joining(required: Book.author.filter(Column("countryCode") == "FR"))
+    ```
 
-```swift
-// SELECT book.*, author.*
-// FROM book
-// LEFT JOIN author ON author.id = book.authorId
-let request = Book.including(optional: Book.author)
-```
-
-This request fetches all books, including their author's information.
-
-Books that don't have any author (a null `authorId` column) are fetched as well.
-
-
-### including(required:)
-
-```swift
-// SELECT book.*, author.*
-// FROM book
-// JOIN author ON author.id = book.authorId
-let request = Book.including(required: Book.author)
-```
-
-This request fetches all books, including their author's information.
-
-Books that don't have any author (a null `authorId` column) are not fetched.
-
-
-### joining(optional:)
-
-```swift
-// SELECT book.*
-// FROM book
-// LEFT JOIN author ON author.id = book.authorId
-let request = Book.joining(optional: Book.author)
-```
-
-This request fetches all books.
-
-Books that don't have any author (a null `authorId` column) are fetched as well.
-
-This request is not much different from `Book.all()`. We'll see in [Combining Associations] and [Filtering Associations] how it can turn out useful.
-
-
-### joining(required:)
-
-```swift
-// SELECT book.*
-// FROM book
-// JOIN author ON author.id = book.authorId
-let request = Book.joining(required: Book.author)
-```
-
-This request fetches all books, but the books that don't have any author (a null `authorId` column).
-
-This request is not much different from `Book.filter(authorId != nil)`. We'll see in [Combining Associations] and [Filtering Associations] how it can turn out useful.
+2. Should the request allow missing associated records?
+    
+    If yes, choose the `optional` variant. Otherwise, choose `required`.
+    
+    For example, to load all books with their respective authors, even if the book has no recorded author, you'd use `including(optional:)`:
+    
+    ```swift
+    /// All books with their respective (eventual) authors
+    /// (One Thousand and One Nights should be there)
+    let request = Book
+        .including(optional: Book.author)
+    ```
+    
+    You can remember to use `optional` when the fetched associated records should feed optional Swift values, of type `Author?`. Conversely, when the fetched results feed non-optional values of type `Author`, prefer `required`.
+    
+    Another way to describe the difference is that `required` filters the fetched results in order to discard missing associated records, when `optional` does not filter anything, and lets missing values pass through.
+    
+    For example, consider this request:
+    
+    ```swift
+    let request = Book
+        .joining(optional: Book.author.filter(Column("countryCode") == "FR"))
+    ```
+    
+    It fetches books that have a French author, but also those who don't :sweat_smile:. It's just another way to tell `Book.all()`. But we'll see below that such join can turn out useful.
+    
+    Finally, readers that speak SQL may compare `optional` with left joins, and `required` with inner joins.
 
 
 ## Combining Associations
