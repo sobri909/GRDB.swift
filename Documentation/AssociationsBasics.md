@@ -591,7 +591,7 @@ Fetch requests do not visit the database until you fetch values from them. This 
 For example, given a `Book.author` [BelongsTo] association, you can build a request for the author of a book. In the example below, we return this request from the `Book.author` property:
 
 ```swift
-extension Book: PersistableRecord {
+struct Book: PersistableRecord {
     static let author = belongsTo(Author.self)
     
     /// The request for a book's author
@@ -605,7 +605,7 @@ This request can fetch a book's author:
 
 ```swift
 let book: Book = ...
-let author = try book.author.fetchOne(db)     // Author?
+let author = try book.author.fetchOne(db)   // Author?
 ```
 
 [HasOne] and [HasMany] associations can also build requests for associated records. For example:
@@ -621,7 +621,7 @@ struct Author: PersistableRecord {
 }
 
 let author: Author = ...
-let books = try author.books.fetchAll(db)     // [Book]
+let books = try author.books.fetchAll(db)   // [Book]
 ```
 
 Those requests can also turn out useful when you want to track their changes with database observation tools like [RxGRDB](http://github.com/RxSwiftCommunity/RxGRDB):
