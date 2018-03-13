@@ -966,33 +966,13 @@ let request = Book
 
 This request builds the following **tree of association keys**:
 
-```
-         root
-           |
-    +------+------+
-    |             |
-"author"     "coverImage"
-    |
-"country"
-```
+![TreeOfAssociationKeys](https://cdn.rawgit.com/groue/GRDB.swift/GRDB3-Associations/Documentation/Images/Associations2/TreeOfAssociationKeys.svg)
 
 **Association keys** are strings. They are the names of the database tables of associated records (unless you specify otherwise, as we'll see below).
 
 Those keys are associated with slices in the fetched rows:
 
-```
-      < root >
-          |
-          +-------+---------------------+
-                  |                     |
-              < author >           < coverImage >
-                  |
-                  +---------+
-                            |
-                        < country >
-SELECT book.*, author.*, country.*, coverImage.*
-FROM ...
-```
+![v](https://cdn.rawgit.com/groue/GRDB.swift/GRDB3-Associations/Documentation/Images/Associations2/TreeOfAssociationKeysMapping.svg)
 
 We'll see below how this tree of association keys and row slices can feed a Decodable record type. We'll then add some details by using FetchableRecord without Decodable support.
 
