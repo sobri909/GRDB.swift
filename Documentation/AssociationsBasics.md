@@ -22,6 +22,8 @@ GRDB Associations
     - [Sorting Associations]
     - [Table Aliases]
 - [Fetching Values from Associations]
+    - [Fetching Associated Records]
+    - [Fetching Values from Joined Requests]
     - [The Structure of a Joined Request]
     - [Decoding a Joined Request with a Decodable Record]
     - [Decoding a Joined Request with FetchableRecord]
@@ -588,22 +590,37 @@ Fetch requests do not visit the database until you fetch values from them. This 
 
 **You can use associations to build requests for associated records.**
 
-For example, given a `Book.author` [BelongsTo] association, you can request and fetch the author of a book:
+For example, given a `Book.author` [BelongsTo] association, you can build a for the author of a book:
 
 ```swift
 let book: Book = ...
-let authorRequest = book.request(Book.author)     // QueryInterfaceRequest<Author>
-let author = try authorRequest.fetchOne(db)       // Author?
-let author = try book.fetchOne(db, Book.author)   // Author?
+let authorRequest = book.request(Book.author)   // QueryInterfaceRequest<Author>
 ```
 
-And given a `Author.books` [HasMany] associations, you can request and fetch the books of an author:
+This request can fetch the book's author:
+
+```swift
+let author = try authorRequest.fetchOne(db)     // Author?
+```
+
+[HasOne] and [HasMany] associations can also build requests for associated records. For example:
 
 ```swift
 let author: Author = ...
-let booksRequest = author.request(Author.books)   // QueryInterfaceRequest<Book>
-let books = try booksRequest.fetchAll(db)         // [Book]
-let books = try author.fetchAll(db, Author.books) // [Book]
+let booksRequest = author.request(Author.books) // QueryInterfaceRequest<Book>
+let books = try booksRequest.fetchAll(db)       // [Book]
+```
+
+Yet, you'll often just want to fetch associated records, and avoid building those intermediate requests: see [Fetching Associated Records] for a shorthand notation. The requests we have just seen will turn out useful, for example, when you want to track their changes with database observation tools like [RxGRDB](http://github.com/RxSwiftCommunity/RxGRDB):
+
+```swift
+// Track changes in the author's books:
+let booksRequest = author.request(Author.books)
+booksRequest.rx
+    .fetchAll(in: dbQueue)
+    .subscribe(onNext: { books in
+        print("Author's book have changed")
+    })
 ```
 
 
@@ -884,6 +901,34 @@ let request = Book.aliased(bookAlias)
 Fetching Values from Associations
 =================================
 
+- [Fetching Associated Records]
+- [Fetching Values from Joined Requests]
+- [The Structure of a Joined Request]
+- [Decoding a Joined Request with a Decodable Record]
+- [Decoding a Joined Request with FetchableRecord]
+
+
+## Fetching Associated Records
+
+**You can use associations to fetch associated records.**
+
+For example, given a `Book.author` [BelongsTo] association, you can fetch a book's author:
+
+```swift
+let book: Book = ...
+let author = try book.fetchOne(db, Book.author)   // Author?
+```
+
+[HasOne] and [HasMany] associations can also fetch associated records. For example:
+
+```swift
+let author: Author = ...
+let books = try author.fetchAll(db, Author.books) // [Book]
+```
+
+
+## Fetching Values from Joined Requests
+
 We have seen in [Building Requests from Associations] how to define requests that involve several records by the mean of [Joining Methods].
 
 If your application needs to display a list of books with information about their author, country, and cover image, you may build the following joined request:
@@ -928,10 +973,6 @@ print(row.debugDescription)
 //     - country: [code:"US", name:"United States of America"]
 //   - coverImage: [id:42, imageId:1, path:"moby-dick.jpg"]
 ```
-
-- [The Structure of a Joined Request]
-- [Decoding a Joined Request with a Decodable Record]
-- [Decoding a Joined Request with FetchableRecord]
 
 
 ## The Structure of a Joined Request
@@ -1198,6 +1239,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 [Filtering Associations]: #filtering-associations
 [Sorting Associations]: #sorting-associations
 [Table Aliases]: #table-aliases
+[Fetching Associated Records]: #fetching-associated-records
+[Fetching Values from Joined Requests]: #fetching-values-from-joined-requests
 [The Structure of a Joined Request]: #the-structure-of-a-joined-request
 [Decoding a Joined Request with a Decodable Record]: #decoding-a-joined-request-with-a-decodable-record
 [Decoding a Joined Request with FetchableRecord]: #decoding-a-joined-request-with-fetchablerecord
