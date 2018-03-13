@@ -708,7 +708,7 @@ The pattern is always the same: you start from a base request, that you extend w
     
     It fetches books that have a French author, but also those who don't :sweat_smile:. It's just another way to tell `Book.all()`. But we'll see below that such join can turn out useful.
     
-    Finally, readers that speak SQL may compare `optional` with left joins, and `required` with inner joins.
+    Finally, readers who speak SQL may compare `optional` with left joins, and `required` with inner joins.
 
 
 ## Combining Associations
@@ -1178,6 +1178,8 @@ You can also perform custom navigation in the tree by using *row scopes*. See [R
 The APIs that have been described above do not cover the whole topic of joined requests. Among the biggest omissions, there is:
 
 - One can not yet join two tables without a foreign key. One can not build the plain `SELECT * FROM a JOIN b`, for example.
+
+- One can not yet express requests such as "all authors with all their books".
 
 - A common use case of associations is aggregations, such as fetching all authors with the number of books they have written:
     
