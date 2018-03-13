@@ -20,6 +20,7 @@ GRDB Associations
     - [Combining Associations]
     - [Filtering Associations]
     - [Sorting Associations]
+    - [Columns Selected by an Association]
     - [Table Aliases]
 - [Fetching Values from Associations]
     - [The Structure of a Joined Request]
@@ -574,6 +575,7 @@ Fetch requests do not visit the database until you fetch values from them. This 
 - [Combining Associations]
 - [Filtering Associations]
 - [Sorting Associations]
+- [Columns Selected by an Association]
 - [Table Aliases]
 
 
@@ -826,6 +828,66 @@ let request = Book
 - Changing the order of the sorting terms (such as sorting on author name first, and then publish date).
 
 Those extra sorting options require **[Table Aliases]**, introduced below.
+
+
+## Columns Selected by an Association
+
+By default, associated records include all their columns:
+
+```swift
+// SELECT book.*, author.*
+// FROM book
+// JOIN author ON author.id = book.authorId
+let request = Book.including(required: Book.author)
+```
+
+**The selection can be changed for each individual request, or for all requests including a given type.**
+
+To specify the selection of an associated record in a specific request, use the `select` method:
+
+```swift
+// SELECT book.*, author.id, author.name
+// FROM book
+// JOIN author ON author.id = book.authorId
+let restrictedAuthor = Book.author.select(Column("id"), Column("name"))
+let request = Book.including(required: restrictedAuthor)
+```
+
+To specify the default selection for all inclusions of a given type, define the `databaseSelection` property:
+
+```swift
+struct RestrictedAuthor: TableRecord {
+    static let databaseSelection: [SQLSelectable] = [Column("id"), Column("name")]
+}
+
+struct ExtendedAuthor: TableRecord {
+    static let databaseSelection: [SQLSelectable] = [AllColumns(), Column.rowID]
+}
+
+extension Book {
+    static let restrictedAuthor = belongsTo(RestrictedAuthor.self)
+    static let extendedAuthor = belongsTo(ExtendedAuthor.self)
+}
+
+// SELECT book.*, author.id, author.name
+// FROM book
+// JOIN author ON author.id = book.authorId
+let request = Book.including(required: Book.restrictedAuthor)
+
+// SELECT book.*, author.*, author.rowid
+// FROM book
+// JOIN author ON author.id = book.authorId
+let request = Book.including(required: Book.extendedAuthor)
+```
+
+Modifying `databaseSelection` not only affects joined requests, but all requests built from the modified record. This is how records make sure they are always fed with the columns they need, no more, no less:
+
+```swift
+// SELECT id, name FROM author
+let request = RestrictedAuthor.all()
+```
+
+> :point_up: **Note**: make sure the `databaseSelection` property is explicitely declared as `[SQLSelectable]`. If it is not, the Swift compiler may infer a type which may silently miss the protocol requirement, resulting in sticky SELECT * requests. See [Columns Selected by a Request](https://github.com/groue/GRDB.swift/blob/GRDB3-Associations/README.md#columns-selected-by-a-request) for further information.
 
 
 ## Table Aliases
@@ -1194,6 +1256,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 [Joining Methods]: #joining-methods
 [Filtering Associations]: #filtering-associations
 [Sorting Associations]: #sorting-associations
+[Columns Selected by an Association]: #columns-selected-by-an-association
 [Table Aliases]: #table-aliases
 [The Structure of a Joined Request]: #the-structure-of-a-joined-request
 [Decoding a Joined Request with a Decodable Record]: #decoding-a-joined-request-with-a-decodable-record
