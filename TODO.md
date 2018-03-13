@@ -40,6 +40,7 @@ GRDB 3.0
 - [ ] HELP NEEDED: criticize singular table name convention, only due to defaultAssociationKey(for:).
 - [ ] "qualifiedOrdeding" -> "qualifiedOrdering"
 - [ ] Hide/Delete all annotating public APIs until we ship support for annotations.
+- [ ] Decide if author.fetchAll(db, Author.books) is useful or not
 
 - [ ] DatabaseMigrator exposes the name of its support table (useful for tests that check which application tables are present). Alternative: have GRDB tell if a database table name is reserved by GRDB.
 - [ ] Ask DatabaseMigrator if a migration has been applied (useful for tests that check if a legacy database resource should be tested or not)
