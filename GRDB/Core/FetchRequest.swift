@@ -1,16 +1,22 @@
-/// The protocol for all types that define a way to fetch database content.
-///
-///     struct Player: FetchableRecord { ... }
-///     let request: ... // Some FetchRequest that fetches Player
-///     try request.fetchCursor(db) // Cursor of Player
-///     try request.fetchAll(db)    // [Player]
-///     try request.fetchOne(db)    // Player?
-public protocol FetchRequest {
-    /// The type that can convert raw database rows to fetched values
-    associatedtype RowDecoder
-    
+// MARK: - DatabaseRequest
+
+/// The protocol for all types that request database values.
+public protocol DatabaseRequest {
+    /// The database region that the request looks into.
+    ///
+    /// - parameter db: A database connection.
+    func fetchedRegion(_ db: Database) throws -> DatabaseRegion
+}
+
+// MARK: - SelectStatementRequest
+
+/// The protocol for all requests that run from a single select statement.
+public protocol SelectStatementRequest: DatabaseRequest {
     /// A tuple that contains a prepared statement that is ready to be
     /// executed, and an eventual row adapter.
+    ///
+    /// - parameter db: A database connection.
+    /// - returns: A prepared statement and an eventual row adapter.
     func prepare(_ db: Database) throws -> (SelectStatement, RowAdapter?)
     
     /// The number of rows fetched by the request.
@@ -18,21 +24,15 @@ public protocol FetchRequest {
     /// Default implementation builds a naive SQL query based on the statement
     /// returned by the `prepare` method: `SELECT COUNT(*) FROM (...)`.
     ///
-    /// Adopting types can refine this countRequest method and return more
+    /// Adopting types can refine this method in order to use more
     /// efficient SQL.
     ///
     /// - parameter db: A database connection.
     func fetchCount(_ db: Database) throws -> Int
-    
-    /// The database region that the request looks into.
-    ///
-    /// This method has a default implementation.
-    ///
-    /// - parameter db: A database connection.
-    func fetchedRegion(_ db: Database) throws -> DatabaseRegion
 }
 
-extension FetchRequest {
+extension SelectStatementRequest {
+    // Default implementation
     /// The number of rows fetched by the request.
     ///
     /// This default implementation builds a naive SQL query based on the
@@ -45,6 +45,7 @@ extension FetchRequest {
         return try Int.fetchOne(db, sql, arguments: statement.arguments)!
     }
     
+    // Default implementation
     /// The database region that the request looks into.
     ///
     /// - parameter db: A database connection.
@@ -52,6 +53,21 @@ extension FetchRequest {
         let (statement, _) = try prepare(db)
         return statement.fetchedRegion
     }
+}
+
+// MARK: - FetchRequest
+
+/// The protocol for all requests that run from a single select statement, and
+/// tell how fetched rows should be interpreted.
+///
+///     struct Player: FetchableRecord { ... }
+///     let request: ... // Some FetchRequest that fetches Player
+///     try request.fetchCursor(db) // Cursor of Player
+///     try request.fetchAll(db)    // [Player]
+///     try request.fetchOne(db)    // Player?
+public protocol FetchRequest: SelectStatementRequest {
+    /// The type that tells how fetched database rows should be interpreted.
+    associatedtype RowDecoder
 }
 
 extension FetchRequest {
@@ -77,6 +93,8 @@ extension FetchRequest {
         return AdaptedFetchRequest(self, adapter)
     }
 }
+
+// MARK: - AdaptedFetchRequest
 
 /// An adapted request.
 public struct AdaptedFetchRequest<Base: FetchRequest> : FetchRequest {
@@ -112,6 +130,8 @@ public struct AdaptedFetchRequest<Base: FetchRequest> : FetchRequest {
         return try base.fetchedRegion(db)
     }
 }
+
+// MARK: - AnyFetchRequest
 
 /// A type-erased FetchRequest.
 ///
@@ -165,6 +185,8 @@ public struct AnyFetchRequest<T> : FetchRequest {
         return try _fetchedRegion(db)
     }
 }
+
+// MARK: - SQLRequest
 
 /// A Request built from raw SQL.
 public struct SQLRequest<T> : FetchRequest {

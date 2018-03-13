@@ -1,3 +1,5 @@
+// MARK: - SelectionRequest
+
 /// The protocol for all requests that can refine their selection.
 public protocol SelectionRequest {
     /// Creates a request with a new net of selected columns.
@@ -59,6 +61,8 @@ extension SelectionRequest {
     }
 }
 
+// MARK: - FilteredRequest
+
 /// The protocol for all requests that can be filtered.
 public protocol FilteredRequest {
     /// Creates a request with the provided *predicate* added to the
@@ -88,6 +92,8 @@ extension FilteredRequest {
         return filter(SQLExpressionLiteral(sql, arguments: arguments))
     }
 }
+
+// MARK: - AggregatingRequest
 
 /// The protocol for all requests that can aggregate.
 public protocol AggregatingRequest {
@@ -126,6 +132,8 @@ extension AggregatingRequest {
         return having(SQLExpressionLiteral(sql, arguments: arguments))
     }
 }
+
+// MARK: - OrderedRequest
 
 /// The protocol for all requests that be ordered.
 public protocol OrderedRequest {
@@ -201,3 +209,4 @@ extension OrderedRequest {
         return order([expression])
     }
 }
+
