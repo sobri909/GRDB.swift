@@ -176,60 +176,6 @@ extension MutablePersistableRecord {
     {
         return association.request(from: self)
     }
-
-    // TODO: decide if useful or not
-//    /// Fetches a cursor of associated records.
-//    ///
-//    /// For example:
-//    ///
-//    ///     struct Player: TableRecord {
-//    ///         static let rounds = hasMany(Round.self)
-//    ///     }
-//    ///
-//    ///     let player: Player = ...
-//    ///     let rounds = try player.fetchCursor(db, Player.rounds) // Cursor of Round
-//    public func fetchCursor<A: Association>(_ db: Database,_ association: A)
-//        throws -> RecordCursor<A.RightAssociated>
-//        where A.LeftAssociated == Self, A.RightAssociated: FetchableRecord
-//    {
-//        return try request(association).fetchCursor(db)
-//    }
-
-    // TODO: decide if useful or not
-//    /// Fetches an array of associated records.
-//    ///
-//    /// For example:
-//    ///
-//    ///     struct Player: TableRecord {
-//    ///         static let rounds = hasMany(Round.self)
-//    ///     }
-//    ///
-//    ///     let player: Player = ...
-//    ///     let rounds = try player.fetchAll(db, Player.rounds) // [Round]
-//    public func fetchAll<A: Association>(_ db: Database,_ association: A)
-//        throws -> [A.RightAssociated]
-//        where A.LeftAssociated == Self, A.RightAssociated: FetchableRecord
-//    {
-//        return try request(association).fetchAll(db)
-//    }
-
-    // TODO: decide if useful or not
-//    /// Fetches an associated record.
-//    ///
-//    /// For example:
-//    ///
-//    ///     struct Player: TableRecord {
-//    ///         static let team = belongsTo(Team.self)
-//    ///     }
-//    ///
-//    ///     let player: Player = ...
-//    ///     let team = try player.fetchOne(db, Player.team) // Team?
-//    public func fetchOne<A: Association>(_ db: Database,_ association: A)
-//        throws -> A.RightAssociated?
-//        where A.LeftAssociated == Self, A.RightAssociated: FetchableRecord
-//    {
-//        return try request(association).fetchOne(db)
-//    }
 }
 
 extension TableRecord {
