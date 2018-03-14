@@ -33,7 +33,7 @@ public protocol SQLOrderingTerm {
     func orderingTermSQL(_ arguments: inout StatementArguments?) -> String
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    func qualifiedOrdeding(with qualifier: SQLTableQualifier) -> SQLOrderingTerm
+    func qualifiedOrdering(with qualifier: SQLTableQualifier) -> SQLOrderingTerm
 }
 
 // MARK: - SQLOrdering
@@ -60,7 +60,7 @@ enum SQLOrdering : SQLOrderingTerm {
         }
     }
     
-    func qualifiedOrdeding(with qualifier: SQLTableQualifier) -> SQLOrderingTerm {
+    func qualifiedOrdering(with qualifier: SQLTableQualifier) -> SQLOrderingTerm {
         switch self {
         case .asc(let expression):
             return SQLOrdering.asc(expression.qualifiedExpression(with: qualifier))

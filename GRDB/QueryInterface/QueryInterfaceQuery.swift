@@ -444,7 +444,7 @@ struct QueryOrdering {
         func qualified(with qualifier: SQLTableQualifier) -> OrderingItem {
             switch self {
             case .orderingTerm(let orderingTerm):
-                return .orderingTerm(orderingTerm.qualifiedOrdeding(with: qualifier))
+                return .orderingTerm(orderingTerm.qualifiedOrdering(with: qualifier))
             case .queryOrdering(let queryOrdering):
                 return .queryOrdering(queryOrdering.qualified(with: qualifier))
             }

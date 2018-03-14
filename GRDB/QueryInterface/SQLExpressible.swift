@@ -70,7 +70,7 @@ extension SQLExpressible where Self: SQLOrderingTerm {
     
     /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
     /// :nodoc:
-    public func qualifiedOrdeding(with qualifier: SQLTableQualifier) -> SQLOrderingTerm {
+    public func qualifiedOrdering(with qualifier: SQLTableQualifier) -> SQLOrderingTerm {
         return sqlExpression.qualifiedExpression(with: qualifier)
     }
 }
