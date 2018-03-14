@@ -22,8 +22,8 @@ GRDB 3.0
 - [ ] Refactor SQL generation and rowId extraction from expression on the visitor pattern. Provide more documentation for literal expressions which become the only way to extend GRDB. Remove QueryInterfaceExtensibilityTests.swift
 - [ ] Make DatabasePool.write safe. See https://github.com/groue/GRDB.swift/commit/5e3c7d9c430df606a1cccfd4983be6b50e778a5c#commitcomment-26988970
 - [ ] Do one of those two:
-    1. Make save() impossible to customize: remove it from EncodableRecord protocol, and remove performSave() from tne public API.
-    2. Open Record.save(), and have RecordBox.save() forward this method to its underlying type.
+    1. Make save() impossible to customize: remove it from MutablePersistableRecord protocol, and remove performSave() from tne public API.
+    2. Open Record.save()
 - [ ] Not sure: Make the MutableEncodableRecord.update(_:columns:) method mutating (as support for an updatedDate column). If so, allow type to change the set of changed columns.
 - [ ] Not sure: type safety
     - [ ] Introduce some record protocol with an associated primary key type. Restrict filter(key:) methods to this type. Allow distinguishing FooId from BarId types.
@@ -32,7 +32,6 @@ GRDB 3.0
 - [ ] Rename columnCount -> numberOfColumns
 - [ ] Try to remove double EncodableRecord/MutableEncodableRecord protocols: Would non-mutating Record methods help?
 - [ ] Association Mammoth: One terrible request with parallel joins, chained joins, name conflict, filtering, ordering, annotation, conditions on several distinct tables
-- [X] Introduce a new safe way to create integer primary keys: t.autoincrementedPrimaryKey("id"). Foster it in the doc.
 - [ ] Replace `t.column("id", .integer).primaryKey()` with `t.autoIncrementedPrimaryKey("id")` in the documentation.
 - [ ] Enhance database regions for counted and joined requests (when we don't care about updates, but only about insertions and deletions)
 - [ ] Doc: replace book->author with passport->country?
