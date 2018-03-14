@@ -1,4 +1,4 @@
-// TODO: make those APIs public when annotations are ready.
+// TODO: make public when annotations are ready.
 struct Annotation<A: Association> {
     var association: A
     var selectable: (Database) throws -> SQLSelectable

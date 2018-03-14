@@ -78,10 +78,11 @@ extension Association {
         return mapQuery { (_, query) in query.select(selection) }
     }
     
-    /// Creates an association with columns appended to the selection.
-    public func annotate(with selection: [SQLSelectable]) -> Self {
-        return mapQuery { (_, query) in query.annotate(with: selection) }
-    }
+    // TODO: make public when annotations are ready.
+//    /// Creates an association with columns appended to the selection.
+//    public func annotate(with selection: [SQLSelectable]) -> Self {
+//        return mapQuery { (_, query) in query.annotate(with: selection) }
+//    }
     
     /// Creates an association with the provided *predicate* added to the
     /// eventual set of already applied predicates.

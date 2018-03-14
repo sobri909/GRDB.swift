@@ -16,8 +16,9 @@ public protocol SelectionRequest {
     ///         .select([Column("email")])
     func select(_ selection: [SQLSelectable]) -> Self
     
-    /// Creates a request with columns appended to the selection.
-    func annotate(with selection: [SQLSelectable]) -> Self
+    // TODO: make public when annotations are ready.
+//    /// Creates a request with columns appended to the selection.
+//    func annotate(with selection: [SQLSelectable]) -> Self
 }
 
 extension SelectionRequest {
@@ -37,10 +38,11 @@ extension SelectionRequest {
         return select(selection)
     }
     
-    /// Creates a request with columns appended to the selection.
-    public func annotate(with selection: SQLSelectable...) -> Self {
-        return annotate(with: selection)
-    }
+    // TODO: make public when annotations are ready.
+//    /// Creates a request with columns appended to the selection.
+//    public func annotate(with selection: SQLSelectable...) -> Self {
+//        return annotate(with: selection)
+//    }
     
     // TODO: remove since we can't guarantee that the sql contains a single
     // expression.

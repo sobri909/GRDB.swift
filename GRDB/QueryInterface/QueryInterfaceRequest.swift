@@ -100,10 +100,11 @@ extension QueryInterfaceRequest : SelectionRequest, FilteredRequest, Aggregating
         return mapQuery { (_, query) in query.select(selection) }
     }
     
-    /// Creates a request with columns appended to the selection.
-    public func annotate(with selection: [SQLSelectable]) -> QueryInterfaceRequest<T> {
-        return mapQuery { (_, query) in query.annotate(with: selection) }
-    }
+    // TODO: make public when annotations are ready.
+//    /// Creates a request with columns appended to the selection.
+//    public func annotate(with selection: [SQLSelectable]) -> QueryInterfaceRequest<T> {
+//        return mapQuery { (_, query) in query.annotate(with: selection) }
+//    }
 
     /// Creates a request which returns distinct rows.
     ///
@@ -368,23 +369,25 @@ extension TableRecord {
         return all().select(selection)
     }
     
-    /// Creates a request with columns appended to the default selection.
-    ///
-    /// The selection defaults to all columns. This default can be changed for
-    /// all requests by the `TableRecord.databaseSelection` property, or
-    /// for individual requests with the `TableRecord.select` method.
-    public static func annotate(with selection: SQLSelectable...) -> QueryInterfaceRequest<Self> {
-        return all().annotate(with: selection)
-    }
+    // TODO: make public when annotations are ready.
+//    /// Creates a request with columns appended to the default selection.
+//    ///
+//    /// The selection defaults to all columns. This default can be changed for
+//    /// all requests by the `TableRecord.databaseSelection` property, or
+//    /// for individual requests with the `TableRecord.select` method.
+//    public static func annotate(with selection: SQLSelectable...) -> QueryInterfaceRequest<Self> {
+//        return all().annotate(with: selection)
+//    }
 
-    /// Creates a request with columns appended to the default selection.
-    ///
-    /// The selection defaults to all columns. This default can be changed for
-    /// all requests by the `TableRecord.databaseSelection` property, or
-    /// for individual requests with the `TableRecord.select` method.
-    public static func annotate(with selection: [SQLSelectable]) -> QueryInterfaceRequest<Self> {
-        return all().annotate(with: selection)
-    }
+    // TODO: make public when annotations are ready.
+//    /// Creates a request with columns appended to the default selection.
+//    ///
+//    /// The selection defaults to all columns. This default can be changed for
+//    /// all requests by the `TableRecord.databaseSelection` property, or
+//    /// for individual requests with the `TableRecord.select` method.
+//    public static func annotate(with selection: [SQLSelectable]) -> QueryInterfaceRequest<Self> {
+//        return all().annotate(with: selection)
+//    }
 
     /// Creates a request which selects *sql*.
     ///
