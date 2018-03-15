@@ -36,6 +36,7 @@ GRDB 3.0
 - [ ] Enhance database regions for counted and joined requests (when we don't care about updates, but only about insertions and deletions)
 - [ ] Doc: replace book->author with passport->country?
 - [ ] Doc: replace all plural database table names with singular
+- [ ] https://github.com/groue/GRDB.swift/pull/319#issuecomment-373366408
 - [ ] HELP NEEDED: criticize singular table name convention, only due to defaultAssociationKey(for:).
 
 - [ ] DatabaseMigrator exposes the name of its support table (useful for tests that check which application tables are present). Alternative: have GRDB tell if a database table name is reserved by GRDB.
