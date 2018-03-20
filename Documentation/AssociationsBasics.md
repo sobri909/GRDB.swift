@@ -73,27 +73,28 @@ let bookInfos = books.map { book -> BookInfo in
 }
 ```
 
-With GRDB associations, we can streamline these operations (and others), by declaring the connections between books and authors. Here is how we define those associations:
+With GRDB associations, we can streamline these operations (and others), by declaring the connections between books and authors. Here is how we define associations, and properties that access them:
 
 ```swift
-struct Author: TableRecord, FetchableRecord {
-    static let books = hasMany(Book.self)      // <-
-    var id: Int64
-    var name: String
+extension Author {
+    static let books = hasMany(Book.self)
+    var books: QueryInterfaceRequest<Book> {
+        return request(for: Author.books)
+    }
 }
 
-struct Book: TableRecord, FetchableRecord {
-    static let author = belongsTo(Author.self) // <-
-    var id: Int64
-    var authorId: Int64?
-    var title: String
+extension Book {
+    static let author = belongsTo(Author.self)
+    var author: QueryInterfaceRequest<Author> {
+        return request(for: Book.author)
+    }
 }
 ```
 
 Loading all books from an existing author is now easier:
 
 ```swift
-let books = try author.fetchAll(db, Author.books)
+let books = try author.books.fetchAll(db)
 ```
 
 As for loading all pairs of books and authors, it is not only easier, but also *far much efficient*:
