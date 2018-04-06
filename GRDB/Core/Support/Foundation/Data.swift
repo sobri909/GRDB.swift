@@ -7,6 +7,9 @@ import Foundation
 
 /// Data is convertible to and from DatabaseValue.
 extension Data : DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
+
     public init(sqliteStatement: SQLiteStatement, index: Int32) {
         if let bytes = sqlite3_column_blob(sqliteStatement, Int32(index)) {
             let count = Int(sqlite3_column_bytes(sqliteStatement, Int32(index)))

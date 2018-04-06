@@ -182,39 +182,6 @@ extension Row {
     /// Indexes span from 0 for the leftmost column to (row.count - 1) for the
     /// righmost column.
     ///
-    /// If the SQLite value is NULL, the result is nil. Otherwise the SQLite
-    /// value is converted to the requested type `Value`. Should this conversion
-    /// fail, a fatal error is raised.
-    public subscript<Value: DatabaseValueConvertible>(_ index: Int) -> Value? {
-        GRDBPrecondition(index >= 0 && index < count, "row index out of range")
-        return impl.value(atUncheckedIndex: index)
-    }
-    
-    /// Returns the value at given index, converted to the requested type.
-    ///
-    /// Indexes span from 0 for the leftmost column to (row.count - 1) for the
-    /// righmost column.
-    ///
-    /// If the SQLite value is NULL, the result is nil. Otherwise the SQLite
-    /// value is converted to the requested type `Value`. Should this conversion
-    /// fail, a fatal error is raised.
-    ///
-    /// This method exists as an optimization opportunity for types that adopt
-    /// StatementColumnConvertible. It *may* trigger SQLite built-in conversions
-    /// (see https://www.sqlite.org/datatype3.html).
-    public subscript<Value: DatabaseValueConvertible & StatementColumnConvertible>(_ index: Int) -> Value? {
-        GRDBPrecondition(index >= 0 && index < count, "row index out of range")
-        if let sqliteStatement = sqliteStatement { // fast path
-            return Value.losslessConvert(sqliteStatement: sqliteStatement, index: Int32(index))
-        }
-        return impl.fastValue(atUncheckedIndex: index)
-    }
-    
-    /// Returns the value at given index, converted to the requested type.
-    ///
-    /// Indexes span from 0 for the leftmost column to (row.count - 1) for the
-    /// righmost column.
-    ///
     /// This method crashes if the fetched SQLite value is NULL, or if the
     /// SQLite value can not be converted to `Value`.
     public subscript<Value: DatabaseValueConvertible>(_ index: Int) -> Value {
@@ -236,7 +203,7 @@ extension Row {
     public subscript<Value: DatabaseValueConvertible & StatementColumnConvertible>(_ index: Int) -> Value {
         GRDBPrecondition(index >= 0 && index < count, "row index out of range")
         if let sqliteStatement = sqliteStatement { // fast path
-            return Value.losslessConvert(sqliteStatement: sqliteStatement, index: Int32(index))
+            return Value.fromSQLiteStatement(sqliteStatement, index: Int32(index))
         }
         return impl.fastValue(atUncheckedIndex: index)
     }
@@ -267,51 +234,13 @@ extension Row {
     /// Column name lookup is case-insensitive, and when several columns have
     /// the same name, the leftmost column is considered.
     ///
-    /// If the column is missing or if the SQLite value is NULL, the result is
-    /// nil. Otherwise the SQLite value is converted to the requested type
-    /// `Value`. Should this conversion fail, a fatal error is raised.
-    public subscript<Value: DatabaseValueConvertible>(_ columnName: String) -> Value? {
-        guard let index = impl.index(ofColumn: columnName) else {
-            return nil
-        }
-        return impl.value(atUncheckedIndex: index)
-    }
-    
-    /// Returns the value at given column, converted to the requested type.
-    ///
-    /// Column name lookup is case-insensitive, and when several columns have
-    /// the same name, the leftmost column is considered.
-    ///
-    /// If the column is missing or if the SQLite value is NULL, the result is
-    /// nil. Otherwise the SQLite value is converted to the requested type
-    /// `Value`. Should this conversion fail, a fatal error is raised.
-    ///
-    /// This method exists as an optimization opportunity for types that adopt
-    /// StatementColumnConvertible. It *may* trigger SQLite built-in conversions
-    /// (see https://www.sqlite.org/datatype3.html).
-    public subscript<Value: DatabaseValueConvertible & StatementColumnConvertible>(_ columnName: String) -> Value? {
-        guard let index = impl.index(ofColumn: columnName) else {
-            return nil
-        }
-        if let sqliteStatement = sqliteStatement { // fast path
-            return Value.losslessConvert(sqliteStatement: sqliteStatement, index: Int32(index))
-        }
-        return impl.fastValue(atUncheckedIndex: index)
-    }
-    
-    /// Returns the value at given column, converted to the requested type.
-    ///
-    /// Column name lookup is case-insensitive, and when several columns have
-    /// the same name, the leftmost column is considered.
-    ///
     /// If the row does not contain the column, a fatal error is raised.
     ///
     /// This method crashes if the fetched SQLite value is NULL, or if the
     /// SQLite value can not be converted to `Value`.
     public subscript<Value: DatabaseValueConvertible>(_ columnName: String) -> Value {
         guard let index = impl.index(ofColumn: columnName) else {
-            // Programmer error
-            fatalError("no such column: \(columnName)")
+            return Value.fromMissingDatabaseColumn(columnName)
         }
         return impl.value(atUncheckedIndex: index)
     }
@@ -331,11 +260,10 @@ extension Row {
     /// (see https://www.sqlite.org/datatype3.html).
     public subscript<Value: DatabaseValueConvertible & StatementColumnConvertible>(_ columnName: String) -> Value {
         guard let index = impl.index(ofColumn: columnName) else {
-            // Programmer error
-            fatalError("no such column: \(columnName)")
+            return Value.fromMissingDatabaseColumn(columnName)
         }
         if let sqliteStatement = sqliteStatement { // fast path
-            return Value.losslessConvert(sqliteStatement: sqliteStatement, index: Int32(index))
+            return Value.fromSQLiteStatement(sqliteStatement, index: Int32(index))
         }
         return impl.fastValue(atUncheckedIndex: index)
     }
@@ -348,34 +276,6 @@ extension Row {
     ///
     /// The result is nil if the row does not contain the column.
     public subscript(_ column: Column) -> DatabaseValueConvertible? {
-        return self[column.name]
-    }
-    
-    /// Returns the value at given column, converted to the requested type.
-    ///
-    /// Column name lookup is case-insensitive, and when several columns have
-    /// the same name, the leftmost column is considered.
-    ///
-    /// If the column is missing or if the SQLite value is NULL, the result is
-    /// nil. Otherwise the SQLite value is converted to the requested type
-    /// `Value`. Should this conversion fail, a fatal error is raised.
-    public subscript<Value: DatabaseValueConvertible>(_ column: Column) -> Value? {
-        return self[column.name]
-    }
-    
-    /// Returns the value at given column, converted to the requested type.
-    ///
-    /// Column name lookup is case-insensitive, and when several columns have
-    /// the same name, the leftmost column is considered.
-    ///
-    /// If the column is missing or if the SQLite value is NULL, the result is
-    /// nil. Otherwise the SQLite value is converted to the requested type
-    /// `Value`. Should this conversion fail, a fatal error is raised.
-    ///
-    /// This method exists as an optimization opportunity for types that adopt
-    /// StatementColumnConvertible. It *may* trigger SQLite built-in conversions
-    /// (see https://www.sqlite.org/datatype3.html).
-    public subscript<Value: DatabaseValueConvertible & StatementColumnConvertible>(_ column: Column) -> Value? {
         return self[column.name]
     }
     
@@ -930,7 +830,6 @@ protocol RowImpl {
     var isFetched: Bool { get }
     func databaseValue(atUncheckedIndex index: Int) -> DatabaseValue
     func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value
-    func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value?
     func hasNull(atUncheckedIndex index:Int) -> Bool
     func dataNoCopy(atUncheckedIndex index:Int) -> Data?
     func columnName(atUncheckedIndex index: Int) -> String
@@ -955,15 +854,7 @@ extension RowImpl {
         return databaseValue(atUncheckedIndex: index).losslessConvert()
     }
     
-    func value<Value: DatabaseValueConvertible>(atUncheckedIndex index: Int) -> Value? {
-        return databaseValue(atUncheckedIndex: index).losslessConvert()
-    }
-    
     func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value {
-        return databaseValue(atUncheckedIndex: index).losslessConvert()
-    }
-    
-    func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value? {
         return databaseValue(atUncheckedIndex: index).losslessConvert()
     }
 }
@@ -1116,13 +1007,9 @@ private struct StatementRowImpl : RowImpl {
     }
     
     func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value {
-        return Value.losslessConvert(sqliteStatement: sqliteStatement, index: Int32(index))
+        return Value.fromSQLiteStatement(sqliteStatement, index: Int32(index))
     }
     
-    func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value? {
-        return Value.losslessConvert(sqliteStatement: sqliteStatement, index: Int32(index))
-    }
-
     func columnName(atUncheckedIndex index: Int) -> String {
         return statementRef.takeUnretainedValue().columnNames[index]
     }

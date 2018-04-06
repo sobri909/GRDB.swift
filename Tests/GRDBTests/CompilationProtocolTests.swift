@@ -155,10 +155,12 @@ private class UserFetchableRecord2 : FetchableRecord {
 // MARK: - StatementColumnConvertible
 
 private struct UserStatementColumnConvertible1 : StatementColumnConvertible {
+    static let canInitializeFromNullDatabaseValue = false
     init(sqliteStatement: SQLiteStatement, index: Int32) { }
 }
 
 private class UserStatementColumnConvertible2 : StatementColumnConvertible {
+    static let canInitializeFromNullDatabaseValue = false
     required init(sqliteStatement: SQLiteStatement, index: Int32) { }
 }
 

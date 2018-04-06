@@ -22,6 +22,8 @@ private struct Fetched: DatabaseValueConvertible, StatementColumnConvertible {
         self.fast = fast
     }
     
+    static let canInitializeFromNullDatabaseValue = false
+    
     init(sqliteStatement: SQLiteStatement, index: Int32) {
         self.init(int: Int(sqlite3_column_int64(sqliteStatement, index)), fast: true)
     }
@@ -404,7 +406,7 @@ class StatementColumnConvertibleFetchTests: GRDBTestCase {
     func testOptionalFetchCursor() throws {
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in
-            func test(_ cursor: NullableColumnCursor<Fetched>) throws {
+            func test(_ cursor: ColumnCursor<Fetched?>) throws {
                 let i = try cursor.next()!
                 XCTAssertEqual(i!.int, 1)
                 XCTAssertTrue(i!.fast)
@@ -432,7 +434,7 @@ class StatementColumnConvertibleFetchTests: GRDBTestCase {
     func testOptionalFetchCursorCompilationFailure() throws {
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in
-            func test(_ cursor: @autoclosure () throws -> NullableColumnCursor<Fetched>, sql: String) throws {
+            func test(_ cursor: @autoclosure () throws -> ColumnCursor<Fetched?>, sql: String) throws {
                 do {
                     _ = try cursor()
                     XCTFail()

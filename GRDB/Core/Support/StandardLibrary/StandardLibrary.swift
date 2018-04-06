@@ -8,7 +8,9 @@
 
 /// Bool adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Bool: DatabaseValueConvertible, StatementColumnConvertible {
-    
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
+
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
     /// - parameters:
@@ -94,7 +96,9 @@ extension Bool: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Int adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Int: DatabaseValueConvertible, StatementColumnConvertible {
-    
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
+
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
     /// - parameters:
@@ -122,6 +126,8 @@ extension Int: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Int8 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Int8: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -150,6 +156,8 @@ extension Int8: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Int16 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Int16: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -178,6 +186,8 @@ extension Int16: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Int32 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Int32: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -206,6 +216,8 @@ extension Int32: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Int64 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Int64: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -238,6 +250,8 @@ extension Int64: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// UInt adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension UInt: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -266,6 +280,8 @@ extension UInt: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// UInt8 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension UInt8: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -294,6 +310,8 @@ extension UInt8: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// UInt16 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension UInt16: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -322,6 +340,8 @@ extension UInt16: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// UInt32 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension UInt32: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -350,6 +370,8 @@ extension UInt32: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// UInt64 adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension UInt64: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -378,6 +400,8 @@ extension UInt64: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Double adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Double: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -408,6 +432,8 @@ extension Double: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// Float adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension Float: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -438,6 +464,8 @@ extension Float: DatabaseValueConvertible, StatementColumnConvertible {
 
 /// String adopts DatabaseValueConvertible and StatementColumnConvertible.
 extension String: DatabaseValueConvertible, StatementColumnConvertible {
+    /// :nodoc:
+    public static let canInitializeFromNullDatabaseValue = false
     
     /// Returns a value initialized from a raw SQLite statement pointer.
     ///
@@ -691,5 +719,54 @@ extension DatabaseCollation {
     ///     )
     public static let localizedStandardCompare = DatabaseCollation("swiftLocalizedStandardCompare") { (lhs, rhs) in
         return lhs.localizedStandardCompare(rhs)
+    }
+}
+
+extension Optional: SQLExpressible where Wrapped: SQLExpressible {
+    public var sqlExpression: SQLExpression {
+        switch self {
+        case .none: return DatabaseValue.null
+        case .some(let value): return value.sqlExpression
+        }
+    }
+}
+
+extension Optional: DatabaseValueConvertible where Wrapped: DatabaseValueConvertible {
+    public var databaseValue: DatabaseValue {
+        switch self {
+        case .none: return DatabaseValue.null
+        case .some(let value): return value.databaseValue
+        }
+    }
+    
+    public static func fromDatabaseValue(_ dbValue: DatabaseValue) -> Optional<Wrapped>? {
+        // Use fromDatabaseValue first: this allows DatabaseValue to convert NULL to .null.
+        if let value = Wrapped.fromDatabaseValue(dbValue) {
+            return value
+        }
+        if dbValue.isNull {
+            return Optional.none
+        } else {
+            return dbValue.losslessConvert() as Wrapped
+        }
+    }
+    
+    public static func fromMissingDatabaseColumn(_ columnName: String) -> Optional<Wrapped> {
+        return Optional.none
+    }
+}
+
+extension Optional: StatementColumnConvertible where Wrapped: StatementColumnConvertible {
+    /// :nodoc:
+    public static var canInitializeFromNullDatabaseValue: Bool {
+        return true
+    }
+    
+    public init(sqliteStatement: SQLiteStatement, index: Int32) {
+        if sqlite3_column_type(sqliteStatement, index) == SQLITE_NULL {
+            self = .none
+        } else {
+            self = .some(Wrapped(sqliteStatement: sqliteStatement, index: index))
+        }
     }
 }

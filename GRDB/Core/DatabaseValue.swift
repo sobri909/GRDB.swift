@@ -250,47 +250,6 @@ extension DatabaseValue {
         }
         fatalError(error)
     }
-    
-    /// Converts the database value to the type Optional<T>.
-    ///
-    ///     let dbValue = "foo".databaseValue
-    ///     let string = dbValue.losslessConvert() as String? // "foo"
-    ///     let null = DatabaseValue.null.losslessConvert() as String? // nil
-    ///
-    /// Conversion is successful if and only if T.fromDatabaseValue returns a
-    /// non-nil value.
-    ///
-    /// This method crashes with a fatal error when conversion fails.
-    ///
-    ///     let dbValue = "foo".databaseValue
-    ///     let int = dbValue.losslessConvert() as Int? // fatalError
-    ///
-    /// - parameters:
-    ///     - sql: Optional SQL statement that enhances the eventual
-    ///       conversion error
-    ///     - arguments: Optional statement arguments that enhances the eventual
-    ///       conversion error
-    public func losslessConvert<T>(sql: String? = nil, arguments: StatementArguments? = nil) -> T? where T : DatabaseValueConvertible {
-        // Use fromDatabaseValue first: this allows DatabaseValue to convert NULL to .null.
-        if let value = T.fromDatabaseValue(self) {
-            return value
-        }
-        if isNull {
-            // Failed conversion from null: ok
-            return nil
-        } else {
-            // Failed conversion from a non-null database value: this is data
-            // loss, a programmer error.
-            var error = "could not convert database value \(self) to \(T.self)"
-            if let sql = sql {
-                error += " with statement `\(sql)`"
-            }
-            if let arguments = arguments, !arguments.isEmpty {
-                error += " arguments \(arguments)"
-            }
-            fatalError(error)
-        }
-    }
 }
 
 // DatabaseValueConvertible

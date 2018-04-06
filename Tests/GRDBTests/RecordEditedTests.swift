@@ -8,10 +8,10 @@ import XCTest
 #endif
 
 private class Person : Record {
-    var id: Int64!
-    var name: String!
+    var id: Int64?
+    var name: String?
     var age: Int?
-    var creationDate: Date!
+    var creationDate: Date?
     
     init(id: Int64? = nil, name: String? = nil, age: Int? = nil, creationDate: Date? = nil) {
         self.id = id
@@ -87,10 +87,10 @@ private class IntegerPropertyOnRealAffinityColumn : Record {
 }
 
 private class PersonWithModifiedCaseColumns: Record {
-    var id: Int64!
-    var name: String!
+    var id: Int64?
+    var name: String?
     var age: Int?
-    var creationDate: Date!
+    var creationDate: Date?
     
     init(id: Int64? = nil, name: String? = nil, age: Int? = nil, creationDate: Date? = nil) {
         self.id = id
@@ -373,13 +373,13 @@ class RecordEditedTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             let person = Person(name: "Arthur", age: 41)
             try person.insert(db)
-            person.id = person.id + 1
+            person.id = person.id! + 1
             XCTAssertTrue(person.hasDatabaseChanges)
         }
         try dbQueue.inDatabase { db in
             let person = PersonWithModifiedCaseColumns(name: "Arthur", age: 41)
             try person.insert(db)
-            person.id = person.id + 1
+            person.id = person.id! + 1
             XCTAssertTrue(person.hasDatabaseChanges)
         }
     }
@@ -682,13 +682,13 @@ class RecordEditedTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             let person = Person(name: "Arthur", age: 41)
             try person.insert(db)
-            person.id = person.id + 1
+            person.id = person.id! + 1
             let changes = person.databaseChanges
             XCTAssertEqual(changes.count, 1)
             for (column, old) in changes {
                 switch column {
                 case "id":
-                    XCTAssertEqual(old, (person.id - 1).databaseValue)
+                    XCTAssertEqual(old, (person.id! - 1).databaseValue)
                 default:
                     XCTFail("Unexpected column: \(column)")
                 }
@@ -697,13 +697,13 @@ class RecordEditedTests: GRDBTestCase {
         try dbQueue.inDatabase { db in
             let person = PersonWithModifiedCaseColumns(name: "Arthur", age: 41)
             try person.insert(db)
-            person.id = person.id + 1
+            person.id = person.id! + 1
             let changes = person.databaseChanges
             XCTAssertEqual(changes.count, 1)
             for (column, old) in changes {
                 switch column {
                 case "ID":
-                    XCTAssertEqual(old, (person.id - 1).databaseValue)
+                    XCTAssertEqual(old, (person.id! - 1).databaseValue)
                 default:
                     XCTFail("Unexpected column: \(column)")
                 }

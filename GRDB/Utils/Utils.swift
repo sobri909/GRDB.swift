@@ -20,31 +20,6 @@ public func databaseQuestionMarks(count: Int) -> String {
     return Array(repeating: "?", count: count).joined(separator: ",")
 }
 
-/// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-///
-/// This protocol is an implementation detail of GRDB. Don't use it.
-///
-/// :nodoc:
-public protocol _OptionalProtocol {
-    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
-    /// :nodoc:
-    associatedtype _Wrapped
-}
-
-/// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-///
-/// This conformance is an implementation detail of GRDB. Don't rely on it.
-///
-/// :nodoc:
-extension Optional : _OptionalProtocol {
-    /// [**Experimental**](http://github.com/groue/GRDB.swift#what-are-experimental-features)
-    ///
-    /// :nodoc:
-    public typealias _Wrapped = Wrapped
-}
-
-
 // MARK: - Internal
 
 /// Reserved for GRDB: do not use.

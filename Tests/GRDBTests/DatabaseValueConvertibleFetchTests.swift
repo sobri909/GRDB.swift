@@ -344,7 +344,7 @@ class DatabaseValueConvertibleFetchTests: GRDBTestCase {
     func testOptionalFetchCursor() throws {
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in
-            func test(_ cursor: NullableDatabaseValueCursor<Fetched>) throws {
+            func test(_ cursor: DatabaseValueCursor<Fetched?>) throws {
                 XCTAssertEqual(try cursor.next()!!.int, 1)
                 XCTAssertTrue(try cursor.next()! == nil)
                 XCTAssertTrue(try cursor.next() == nil) // end
@@ -372,7 +372,7 @@ class DatabaseValueConvertibleFetchTests: GRDBTestCase {
         let customError = NSError(domain: "Custom", code: 0xDEAD)
         dbQueue.add(function: DatabaseFunction("throw", argumentCount: 0, pure: true) { _ in throw customError })
         try dbQueue.inDatabase { db in
-            func test(_ cursor: NullableDatabaseValueCursor<Fetched>, sql: String) throws {
+            func test(_ cursor: DatabaseValueCursor<Fetched?>, sql: String) throws {
                 do {
                     _ = try cursor.next()
                     XCTFail()
@@ -411,7 +411,7 @@ class DatabaseValueConvertibleFetchTests: GRDBTestCase {
     func testOptionalFetchCursorCompilationFailure() throws {
         let dbQueue = try makeDatabaseQueue()
         try dbQueue.inDatabase { db in
-            func test(_ cursor: @autoclosure () throws -> NullableDatabaseValueCursor<Fetched>, sql: String) throws {
+            func test(_ cursor: @autoclosure () throws -> DatabaseValueCursor<Fetched?>, sql: String) throws {
                 do {
                     _ = try cursor()
                     XCTFail()

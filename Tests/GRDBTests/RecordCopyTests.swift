@@ -8,8 +8,8 @@ import XCTest
 #endif
 
 private class Person : Record {
-    var id: Int64!
-    var name: String!
+    var id: Int64?
+    var name: String?
     var age: Int?
     var creationDate: Date
     

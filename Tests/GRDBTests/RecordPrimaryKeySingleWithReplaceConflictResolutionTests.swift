@@ -8,7 +8,7 @@ import XCTest
 #endif
 
 class Email : Record {
-    var email: String!
+    var email: String?
     var label: String?
     
     init(email: String? = nil, label: String? = nil) {
@@ -273,7 +273,7 @@ class RecordPrimaryKeySingleWithReplaceConflictResolutionTests: GRDBTestCase {
             do {
                 let cursor = try Email.fetchCursor(db, keys: [["email": record1.email], ["email": record2.email]])
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.email }), Set([record1.email, record2.email]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.email! }), Set([record1.email!, record2.email!]))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
             
@@ -304,7 +304,7 @@ class RecordPrimaryKeySingleWithReplaceConflictResolutionTests: GRDBTestCase {
             do {
                 let fetchedRecords = try Email.fetchAll(db, keys: [["email": record1.email], ["email": record2.email]])
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.email }), Set([record1.email, record2.email]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.email! }), Set([record1.email!, record2.email!]))
             }
             
             do {
@@ -348,7 +348,7 @@ class RecordPrimaryKeySingleWithReplaceConflictResolutionTests: GRDBTestCase {
             do {
                 let cursor = try Email.filter(keys: [["email": record1.email], ["email": record2.email]]).fetchCursor(db)
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.email }), Set([record1.email, record2.email]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.email! }), Set([record1.email!, record2.email!]))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
             
@@ -379,7 +379,7 @@ class RecordPrimaryKeySingleWithReplaceConflictResolutionTests: GRDBTestCase {
             do {
                 let fetchedRecords = try Email.filter(keys: [["email": record1.email], ["email": record2.email]]).fetchAll(db)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.email }), Set([record1.email, record2.email]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.email! }), Set([record1.email!, record2.email!]))
             }
             
             do {
@@ -451,7 +451,7 @@ class RecordPrimaryKeySingleWithReplaceConflictResolutionTests: GRDBTestCase {
                 let emails = [record1.email!, record2.email!]
                 let fetchedRecords = try Email.fetchAll(db, keys: emails)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.email }), Set(emails))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.email! }), Set(emails))
             }
         }
     }
@@ -525,7 +525,7 @@ class RecordPrimaryKeySingleWithReplaceConflictResolutionTests: GRDBTestCase {
                 let emails = [record1.email!, record2.email!]
                 let fetchedRecords = try Email.filter(keys: emails).fetchAll(db)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.email }), Set(emails))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.email! }), Set(emails))
             }
         }
     }

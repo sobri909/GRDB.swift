@@ -9,10 +9,10 @@ import XCTest
 
 // Person has a RowID primary key, and a overriden insert() method.
 private class Person : Record {
-    var id: Int64!
-    var name: String!
+    var id: Int64?
+    var name: String?
     var age: Int?
-    var creationDate: Date!
+    var creationDate: Date?
     
     init(id: Int64? = nil, name: String? = nil, age: Int? = nil, creationDate: Date? = nil) {
         self.id = id
@@ -336,7 +336,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
             do {
                 let cursor = try Person.fetchCursor(db, keys: [["rowid": record1.id], ["rowid": record2.id]])
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set([record1.id, record2.id]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set([record1.id!, record2.id!]))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
             
@@ -365,7 +365,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
             do {
                 let fetchedRecords = try Person.fetchAll(db, keys: [["rowid": record1.id], ["rowid": record2.id]])
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set([record1.id, record2.id]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set([record1.id!, record2.id!]))
             }
             
             do {
@@ -386,7 +386,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
             XCTAssertTrue(fetchedRecord.id == record.id)
             XCTAssertTrue(fetchedRecord.name == record.name)
             XCTAssertTrue(fetchedRecord.age == record.age)
-            XCTAssertTrue(abs(fetchedRecord.creationDate.timeIntervalSince(record.creationDate)) < 1e-3)    // ISO-8601 is precise to the millisecond.
+            XCTAssertTrue(abs(fetchedRecord.creationDate!.timeIntervalSince(record.creationDate!)) < 1e-3)    // ISO-8601 is precise to the millisecond.
         }
     }
 
@@ -409,7 +409,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
             do {
                 let cursor = try Person.filter(keys: [["rowid": record1.id], ["rowid": record2.id]]).fetchCursor(db)
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set([record1.id, record2.id]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set([record1.id!, record2.id!]))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
             
@@ -438,7 +438,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
             do {
                 let fetchedRecords = try Person.filter(keys: [["rowid": record1.id], ["rowid": record2.id]]).fetchAll(db)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set([record1.id, record2.id]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set([record1.id!, record2.id!]))
             }
             
             do {
@@ -459,7 +459,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
             XCTAssertTrue(fetchedRecord.id == record.id)
             XCTAssertTrue(fetchedRecord.name == record.name)
             XCTAssertTrue(fetchedRecord.age == record.age)
-            XCTAssertTrue(abs(fetchedRecord.creationDate.timeIntervalSince(record.creationDate)) < 1e-3)    // ISO-8601 is precise to the millisecond.
+            XCTAssertTrue(abs(fetchedRecord.creationDate!.timeIntervalSince(record.creationDate!)) < 1e-3)    // ISO-8601 is precise to the millisecond.
         }
     }
 
@@ -484,7 +484,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
                 let ids = [record1.id!, record2.id!]
                 let cursor = try Person.fetchCursor(db, keys: ids)
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set(ids))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set(ids))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
         }
@@ -508,7 +508,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
                 let ids = [record1.id!, record2.id!]
                 let fetchedRecords = try Person.fetchAll(db, keys: ids)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set(ids))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set(ids))
             }
         }
     }
@@ -530,7 +530,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
                 XCTAssertTrue(fetchedRecord.id == record.id)
                 XCTAssertTrue(fetchedRecord.name == record.name)
                 XCTAssertTrue(fetchedRecord.age == record.age)
-                XCTAssertTrue(abs(fetchedRecord.creationDate.timeIntervalSince(record.creationDate)) < 1e-3)    // ISO-8601 is precise to the millisecond.
+                XCTAssertTrue(abs(fetchedRecord.creationDate!.timeIntervalSince(record.creationDate!)) < 1e-3)    // ISO-8601 is precise to the millisecond.
             }
         }
     }
@@ -556,7 +556,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
                 let ids = [record1.id!, record2.id!]
                 let cursor = try Person.filter(keys: ids).fetchCursor(db)
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set(ids))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set(ids))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
         }
@@ -580,7 +580,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
                 let ids = [record1.id!, record2.id!]
                 let fetchedRecords = try Person.filter(keys: ids).fetchAll(db)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.id }), Set(ids))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.id! }), Set(ids))
             }
         }
     }
@@ -602,7 +602,7 @@ class RecordPrimaryKeyHiddenRowIDTests : GRDBTestCase {
                 XCTAssertTrue(fetchedRecord.id == record.id)
                 XCTAssertTrue(fetchedRecord.name == record.name)
                 XCTAssertTrue(fetchedRecord.age == record.age)
-                XCTAssertTrue(abs(fetchedRecord.creationDate.timeIntervalSince(record.creationDate)) < 1e-3)    // ISO-8601 is precise to the millisecond.
+                XCTAssertTrue(abs(fetchedRecord.creationDate!.timeIntervalSince(record.creationDate!)) < 1e-3)    // ISO-8601 is precise to the millisecond.
             }
         }
     }

@@ -9,9 +9,9 @@ import XCTest
 
 // Citizenship has a multiple-column primary key.
 private class Citizenship : Record {
-    var personName: String!
-    var countryName: String!
-    var native: Bool!
+    var personName: String?
+    var countryName: String?
+    var native: Bool?
     
     init(personName: String? = nil, countryName: String? = nil, native: Bool? = nil) {
         self.personName = personName
@@ -291,7 +291,7 @@ class RecordPrimaryKeyMultipleTests: GRDBTestCase {
             do {
                 let cursor = try Citizenship.fetchCursor(db, keys: [["personName": record1.personName, "countryName": record1.countryName], ["personName": record2.personName, "countryName": record2.countryName]])
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.personName }), Set([record1.personName, record2.personName]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.personName! }), Set([record1.personName!, record2.personName!]))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
             
@@ -320,7 +320,7 @@ class RecordPrimaryKeyMultipleTests: GRDBTestCase {
             do {
                 let fetchedRecords = try Citizenship.fetchAll(db, keys: [["personName": record1.personName, "countryName": record1.countryName], ["personName": record2.personName, "countryName": record2.countryName]])
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.personName }), Set([record1.personName, record2.personName]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.personName! }), Set([record1.personName!, record2.personName!]))
             }
             
             do {
@@ -363,7 +363,7 @@ class RecordPrimaryKeyMultipleTests: GRDBTestCase {
             do {
                 let cursor = try Citizenship.filter(keys: [["personName": record1.personName, "countryName": record1.countryName], ["personName": record2.personName, "countryName": record2.countryName]]).fetchCursor(db)
                 let fetchedRecords = try [cursor.next()!, cursor.next()!]
-                XCTAssertEqual(Set(fetchedRecords.map { $0.personName }), Set([record1.personName, record2.personName]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.personName! }), Set([record1.personName!, record2.personName!]))
                 XCTAssertTrue(try cursor.next() == nil) // end
             }
             
@@ -392,7 +392,7 @@ class RecordPrimaryKeyMultipleTests: GRDBTestCase {
             do {
                 let fetchedRecords = try Citizenship.filter(keys: [["personName": record1.personName, "countryName": record1.countryName], ["personName": record2.personName, "countryName": record2.countryName]]).fetchAll(db)
                 XCTAssertEqual(fetchedRecords.count, 2)
-                XCTAssertEqual(Set(fetchedRecords.map { $0.personName }), Set([record1.personName, record2.personName]))
+                XCTAssertEqual(Set(fetchedRecords.map { $0.personName! }), Set([record1.personName!, record2.personName!]))
             }
             
             do {

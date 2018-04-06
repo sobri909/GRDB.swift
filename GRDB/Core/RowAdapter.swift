@@ -505,11 +505,6 @@ struct AdapterRowImpl : RowImpl {
         return base.impl.fastValue(atUncheckedIndex: mappedIndex)
     }
     
-    func fastValue<Value: DatabaseValueConvertible & StatementColumnConvertible>(atUncheckedIndex index: Int) -> Value? {
-        let mappedIndex = mapping.baseColumnIndex(atMappingIndex: index)
-        return base.impl.fastValue(atUncheckedIndex: mappedIndex)
-    }
-
     func dataNoCopy(atUncheckedIndex index:Int) -> Data? {
         let mappedIndex = mapping.baseColumnIndex(atMappingIndex: index)
         return base.impl.dataNoCopy(atUncheckedIndex: mappedIndex)

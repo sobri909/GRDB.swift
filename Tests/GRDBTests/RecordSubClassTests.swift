@@ -8,10 +8,10 @@ import XCTest
 #endif
 
 private class Person : Record {
-    var id: Int64!
-    var name: String!
+    var id: Int64?
+    var name: String?
     var age: Int?
-    var creationDate: Date!
+    var creationDate: Date?
     
     init(id: Int64? = nil, name: String? = nil, age: Int? = nil, creationDate: Date? = nil) {
         self.id = id
@@ -67,7 +67,7 @@ private class Person : Record {
 }
 
 private class MinimalPersonWithOverrides : Person {
-    var extra: Int!
+    var extra: Int?
     
     // Record
     
@@ -83,7 +83,7 @@ private class PersonWithOverrides : Person {
         case update
     }
     
-    var extra: Int!
+    var extra: Int?
     var lastSavingMethod: SavingMethod?
     
     override init(id: Int64? = nil, name: String? = nil, age: Int? = nil, creationDate: Date? = nil) {
@@ -174,7 +174,7 @@ class RecordSubClassTests: GRDBTestCase {
                 XCTAssertTrue(fetchedRecord.id == record.id)
                 XCTAssertTrue(fetchedRecord.name == record.name)
                 XCTAssertTrue(fetchedRecord.age == record.age)
-                XCTAssertTrue(abs(fetchedRecord.creationDate.timeIntervalSince(record.creationDate)) < 1e-3)    // ISO-8601 is precise to the millisecond.
+                XCTAssertTrue(abs(fetchedRecord.creationDate!.timeIntervalSince(record.creationDate!)) < 1e-3)    // ISO-8601 is precise to the millisecond.
                 XCTAssertTrue(fetchedRecord.extra == 123)
             }
             
@@ -183,7 +183,7 @@ class RecordSubClassTests: GRDBTestCase {
                 XCTAssertTrue(fetchedRecord.id == record.id)
                 XCTAssertTrue(fetchedRecord.name == record.name)
                 XCTAssertTrue(fetchedRecord.age == record.age)
-                XCTAssertTrue(abs(fetchedRecord.creationDate.timeIntervalSince(record.creationDate)) < 1e-3)    // ISO-8601 is precise to the millisecond.
+                XCTAssertTrue(abs(fetchedRecord.creationDate!.timeIntervalSince(record.creationDate!)) < 1e-3)    // ISO-8601 is precise to the millisecond.
                 XCTAssertTrue(fetchedRecord.extra == 123)
             }
         }
